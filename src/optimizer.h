@@ -26,6 +26,10 @@ private:
   double beta1{0.1}, beta2{0.99}, eps_hat{1e-8}, lambda{0.1};
   double sgld_temperature{1.0};
   VectorXd m, v; // momentum, velocity
+  double schedule_min_scale{0.0}; // floor under the decay schedule
+  int step_clip_mode{2};        // 0 = per-component, 1 = norm, 2 = adaptive
+  double step_clip_factor{5.0}; // adaptive: multiple of the recent step length
+  double step_scale{0.0};       // adaptive: running typical step length
 
   // store the preconditioner
   MatrixXd preconditioner;
@@ -72,6 +76,11 @@ public:
 
   double get_last_grad_norm() const { return last_grad_norm; }
   void set_stepsize_decay_enabled(bool value) { stepsize_decay_enabled = value; }
+  // Start the step-size schedule HERE rather than at a preset iteration.
+  // Where the transient ends is a property of the problem, not something a
+  // caller can know in advance, so the schedule is armed by the convergence
+  // machinery at the first checkpoint where the drift test passes.
+  void set_schedule_burnin(int it) { stepsize_schedule_burnin_iter = it; }
   double get_stepsize_decay_scale() const { return stepsize_decay_scale; }
   void set_stepsize_decay_scale(double scale) {
     stepsize_decay_scale = scale;

@@ -35,6 +35,9 @@ test_that("ngme_replicate par_names stay consistent with fixed sigma", {
     standardize = FALSE
   )
 
-  expect_equal(ng$par_names, "sigma_2")
+  # measurement-noise parameters carry a meas_ prefix, so that a latent field
+  # named sigma_1 and the measurement sigma_1 are no longer the same name --
+  # they used to collide and be averaged together as if one parameter.
+  expect_equal(ng$par_names, "meas_sigma_2")
   expect_equal(ng$n_params, length(ng$par_names))
 })

@@ -67,12 +67,38 @@ void Ngme::compute(bool with_precond, double eps) {
     precond_valid_ = false;
   }
   if (sampling_strategy == Strategy::all) {
+    VectorXd grad_acc = VectorXd::Zero(n_params);
+    MatrixXd precond_acc = with_precond
+                               ? MatrixXd::Zero(n_params, n_params)
+                               : MatrixXd::Zero(0, 0);
+    std::atomic<bool> compute_failed(false);
+    std::string compute_error;
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) num_threads(num_threads_repl)        \
+    reduction(vec_plus : grad_acc) reduction(mat_plus : precond_acc)
+#endif
     for (int i = 0; i < n_repl; i++) {
-      ngme_repls[i]->compute_grad_and_hessian(with_precond, eps);
-      last_grad_ += ngme_repls[i]->get_gradient();
-      if (with_precond)
-        last_precond_ += ngme_repls[i]->get_preconditioner();
+      if (compute_failed.load(std::memory_order_relaxed))
+        continue;
+      try {
+        ngme_repls[i]->compute_grad_and_hessian(with_precond, eps);
+        grad_acc += ngme_repls[i]->get_gradient();
+        if (with_precond)
+          precond_acc += ngme_repls[i]->get_preconditioner();
+      } catch (const std::exception &e) {
+#pragma omp critical(ngme_parallel_exception)
+        {
+          if (!compute_failed.load(std::memory_order_relaxed))
+            compute_error = e.what();
+          compute_failed.store(true, std::memory_order_relaxed);
+        }
+      }
     }
+    if (compute_failed.load(std::memory_order_relaxed))
+      throw std::runtime_error(compute_error);
+    last_grad_ = grad_acc;
+    if (with_precond)
+      last_precond_ = precond_acc;
   } else { // ws
     int idx = weighted_sampler(gen);
     sync_repl_if_needed(idx, with_precond);
@@ -95,6 +121,7 @@ void Ngme::compute(bool with_precond, double eps) {
   }
   mark_computed();
 }
+
 
 MatrixXd Ngme::precond() {
   if (!grad_valid_)

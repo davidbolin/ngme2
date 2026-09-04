@@ -18,7 +18,9 @@ spacetime(
   B_gamma_y = matrix(1, nrow = mesh[[2]]$n, ncol = 1),
   B_gamma_x_list = NULL,
   B_gamma_y_list = NULL,
-  stabilization = TRUE
+  stabilization = TRUE,
+  stationary_init = TRUE,
+  cc_variance_free = TRUE
 )
 }
 \arguments{
@@ -53,6 +55,9 @@ spacetime(
 \item{B_gamma_y_list}{A list of design matrices for the y component of the advection term on every time node, length(B_gamma_y_list) == nt-1.}
 
 \item{stabilization}{TRUE if using a stabilization term (for implicit Euler).}
+
+\item{cc_variance_free}{Scale the operator with cc so that it affects the
+total variance less. Default TRUE.}
 }
 \value{
 ngme_operator object.

@@ -8,6 +8,7 @@
 #undef COMPLEX
 
 #include "include/factor_counters.h"
+#include "include/thread_io.h"
 #include "include/timer.h"
 #include "ngme.h"
 #include "optimizer.h"
@@ -20,6 +21,7 @@
 #include <Eigen/Sparse>
 #include <algorithm>
 #include <atomic>
+#include <deque>
 #include <cmath>
 #include <exception>
 #include <limits>
@@ -37,7 +39,7 @@ using namespace Rcpp;
 std::vector<bool> check_conv(const MatrixXd &, const MatrixXd &, int, int,
                              double, double, const std::vector<std::string> &,
                              bool, int, double, const VectorXd &, bool, bool,
-                             int n_chains, bool trend_use_tstat,
+                             int n_chains,
                              bool use_std_check, double trend_rel_lim,
                              double win_span_iters, bool window_ready,
                              int report_batch,
@@ -67,10 +69,6 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
                               ? Rcpp::as<bool>(control_opt["store_traj"])
                               : true;
 
-  const bool trend_use_tstat =
-      control_opt.containsElementNamed("trend_use_tstat")
-          ? Rcpp::as<bool>(control_opt["trend_use_tstat"])
-          : false;
   const bool use_std_check = control_opt.containsElementNamed("use_std_check")
                                  ? Rcpp::as<bool>(control_opt["use_std_check"])
                                  : true;
@@ -125,7 +123,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   int n_slope_check = (control_opt["n_slope_check"]);
   double std_lim = (control_opt["std_lim"]);
   double trend_lim = (control_opt["trend_lim"]);
-  const bool trend_std_conv_check =
+  const bool trend_std_conv_check_req =
       control_opt.containsElementNamed("trend_std_conv_check")
           ? Rcpp::as<bool>(control_opt["trend_std_conv_check"])
           : true;
@@ -135,6 +133,73 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   double start_sd = (control_opt["start_sd"]);
   double print_check_info = (control_opt["print_check_info"]);
   double max_R_hat = (control_opt["max_R_hat"]);
+  // "stationarity" stops when the chains have settled, leaving the remaining
+  // Monte Carlo error to the Polyak-Ruppert average of the iterates rather than
+  // trying to grind it down by running longer. "drift" is the older rule, which
+  // required the fitted drift rate itself to fall below trend_rel_lim.
+  const std::string conv_criterion =
+      control_opt.containsElementNamed("conv_criterion")
+          ? Rcpp::as<std::string>(control_opt["conv_criterion"])
+          : std::string("stationarity");
+  const bool stationarity_mode = (conv_criterion == "stationarity");
+  // In stationarity mode the drift-rate clause is replaced, not added to: it is
+  // the clause whose cost this mode exists to avoid.
+  const bool trend_std_conv_check =
+      trend_std_conv_check_req && !stationarity_mode;
+  // Length of the stationarity comparison window, in sub-batches.
+  // 0 = derive it from the measured correlation length of the chains.
+  const int stationarity_window =
+      control_opt.containsElementNamed("stationarity_window")
+          ? Rcpp::as<int>(control_opt["stationarity_window"])
+          : 0;
+  const double stationarity_eff =
+      control_opt.containsElementNamed("stationarity_eff")
+          ? Rcpp::as<double>(control_opt["stationarity_eff"])
+          : 8.0;
+  // MAGNITUDE, not significance (2026-09-03). See the stationarity test below.
+  const double polish_floor_frac =
+      control_opt.containsElementNamed("polish_floor_frac")
+          ? Rcpp::as<double>(control_opt["polish_floor_frac"])
+          : 0.25;
+  const double stationarity_ratio_lim =
+      control_opt.containsElementNamed("stationarity_ratio_lim")
+          ? Rcpp::as<double>(control_opt["stationarity_ratio_lim"])
+          : 1.0;
+  const double stationarity_dir_lim =
+      control_opt.containsElementNamed("stationarity_dir_lim")
+          ? Rcpp::as<double>(control_opt["stationarity_dir_lim"])
+          : 0.5;
+  const int stationarity_min_checks =
+      control_opt.containsElementNamed("stationarity_min_checks")
+          ? Rcpp::as<int>(control_opt["stationarity_min_checks"])
+          : 6;
+  const double schedule_arm_z =
+      control_opt.containsElementNamed("schedule_arm_z")
+          ? Rcpp::as<double>(control_opt["schedule_arm_z"])
+          : 2.0;
+  const bool schedule_auto_start =
+      control_opt.containsElementNamed("schedule_auto_start")
+          ? Rcpp::as<bool>(control_opt["schedule_auto_start"])
+          : false;
+  const bool mc_se_conv_check =
+      control_opt.containsElementNamed("mc_se_conv_check")
+          ? Rcpp::as<bool>(control_opt["mc_se_conv_check"])
+          : true;
+  const double mc_se_lim = control_opt.containsElementNamed("mc_se_lim")
+                               ? Rcpp::as<double>(control_opt["mc_se_lim"])
+                               : 0.5;
+  const int n_settle_checks =
+      control_opt.containsElementNamed("n_settle_checks")
+          ? Rcpp::as<int>(control_opt["n_settle_checks"])
+          : 3;
+  const int max_stepsize_decays =
+      control_opt.containsElementNamed("max_stepsize_decays")
+          ? Rcpp::as<int>(control_opt["max_stepsize_decays"])
+          : 6;
+  const double stepsize_decay_precision_gamma =
+      control_opt.containsElementNamed("stepsize_decay_precision_gamma")
+          ? Rcpp::as<double>(control_opt["stepsize_decay_precision_gamma"])
+          : 0.5;
   const double trend_rel_lim =
       control_opt.containsElementNamed("trend_rel_lim")
           ? Rcpp::as<double>(control_opt["trend_rel_lim"])
@@ -155,7 +220,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 #endif
 
   // When `chain_start` is supplied (one row per chain, in chain order) each
-  // chain resumes at its OWN previous endpoint and no jitter is applied.
+  // chain resumes at its own previous endpoint and no jitter is applied.
   MatrixXd chain_start;
   bool has_chain_start = false;
   if (control_opt.containsElementNamed("chain_start") &&
@@ -168,10 +233,9 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
                     (int)chain_start.rows(), n_chains);
     }
   }
-  // Per-chain LATENT STATE: one model list per chain, differing from R_ngme
+  // Per-chain latent state: one model list per chain, differing from R_ngme
   // only in each replicate's W and V. The parameters still come from
-  // chain_start; this is what keeps a chain's field and mixing variables its
-  // own instead of the chain average.
+  // chain_start.
   Rcpp::List chain_ngme;
   bool has_chain_ngme = false;
   if (control_opt.containsElementNamed("chain_ngme") &&
@@ -180,9 +244,6 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     has_chain_ngme = (chain_ngme.size() >= n_chains);
   }
 
-  // start_sd exists to disperse chains from a COLD start, so that agreement
-  // between them is evidence. Applying it to a continuation destroys exactly
-  // the continuity the continuation is for.
   const bool warm_start_no_jitter =
       control_opt.containsElementNamed("warm_start_no_jitter") &&
       Rcpp::as<bool>(control_opt["warm_start_no_jitter"]);
@@ -209,6 +270,12 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       ngmes[i]->set_parameter_and_update(chain_start.row(i).transpose(), true);
     }
     opt_vec.push_back(Ngme_optimizer(control_opt, ngmes[i], seed + i));
+    // With auto-arming the schedule must be inert until the transient is over,
+    // not merely re-based when it fires. poly_decay() defaults burnin_iter to 0,
+    // so without this the decay runs from iteration 0, freezes the chains short
+    // of the optimum, and the drift can then never fall far enough to arm.
+    if (schedule_auto_start)
+      opt_vec.back().set_schedule_burnin(std::numeric_limits<int>::max() / 2);
     if (stepsize_decay_on_trend)
       opt_vec.back().set_stepsize_decay_enabled(true);
     if (verbose_enabled && i > 0) {
@@ -281,6 +348,36 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   // keep last-diagnostics for reporting
   std::vector<double> last_tstats(n_params, 0.0);
   std::vector<double> last_rel_drift(n_params, 0.0);
+  std::vector<std::vector<double>> conv_diag; // see the checkpoint block below
+  VectorXd se_stat = VectorXd::Constant(n_params, NA_REAL);
+  VectorXd se_smooth = VectorXd::Constant(n_params, NA_REAL);
+  VectorXd mc_se = VectorXd::Constant(n_params, NA_REAL);
+  // Smoothed mc_se.  A single checkpoint's batch-means estimate swings by an
+  // order of magnitude between adjacent checkpoints so gating on the raw value
+  // lets two consecutive lucky readings declare convergence.
+  VectorXd mc_smooth = VectorXd::Constant(n_params, NA_REAL);
+  int n_stepsize_decays = 0;
+  // Index into the sub-batch history below which points are stale.  Changing the
+  // step size changes the stationary distribution the chains live in, so every
+  // iterate taken before the change belongs to a different distribution and must
+  // not enter any window.
+  int hist_floor = 0;
+  // Direction history for the flat-direction test. Must live outside the
+  // per-checkpoint block.
+  std::vector<std::deque<double>> stat_dir_hist;
+  std::vector<bool> stat_flat;
+  bool stat_dir_init = false;
+  // The step-size schedule is armed when the transient ends, not at a preset
+  // iteration. The trend test asks exactly whether the parameters have stopped
+  // moving systematically. A run that is settled but noisy arms the schedule
+  // and gets its noise damped, where a rule gated on R-hat would deadlock.
+  bool schedule_armed = false;
+  int schedule_ready_count = 0;
+  // Checkpoints still to wait through after a step-size change.  The window is
+  // rebuilt from scratch then, so the first checkpoints after a decay measure
+  // mc_se from the minimum number of blocks and are at their noisiest.
+  // Waiting lets the new step size accumulate enough blocks to be judged on.
+  int settle_left = 0;
   int consec_converged = 0;
   std::vector<bool> last_conv_rhat(n_params, false);
   std::vector<bool> last_conv_trend_std(n_params, false);
@@ -293,7 +390,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   bool all_converge = false;
   int steps = 0;
   int batch_steps = (iterations / n_batch);
-  // sqrt(n) blocks of sqrt(n) iterates is the standard batch-means split; it
+  // sqrt(n) blocks of sqrt(n) iterates is the standard batch-means split. It
   // needs enough blocks for a usable variance, so fall back to the naive
   // estimator on very short batches.
   if (batch_steps >= 8) {
@@ -306,6 +403,15 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       control_opt.containsElementNamed("polish_iterations")
           ? Rcpp::as<int>(control_opt["polish_iterations"])
           : 50;
+  // The polish decays its step size rather than dropping it once.
+  const double polish_decay_alpha =
+      control_opt.containsElementNamed("polish_decay_alpha")
+          ? Rcpp::as<double>(control_opt["polish_decay_alpha"])
+          : 0.6;
+  const double polish_decay_t0 =
+      control_opt.containsElementNamed("polish_decay_t0")
+          ? Rcpp::as<double>(control_opt["polish_decay_t0"])
+          : 100.0;
   const double polish_stepsize_factor =
       control_opt.containsElementNamed("polish_stepsize_factor")
           ? Rcpp::as<double>(control_opt["polish_stepsize_factor"])
@@ -317,7 +423,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   int stepsize_decay_bad_epochs = 0;
 
   // Enable convergence only when at least one diagnostic is requested.
-  const bool param_conv_check = trend_std_conv_check || R_hat_conv_check;
+  const bool param_conv_check =
+      trend_std_conv_check || R_hat_conv_check || stationarity_mode;
   const bool any_conv_check = param_conv_check;
 
   while (steps < iterations && !all_converge) {
@@ -343,8 +450,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
           continue;
         }
         try {
-          // Compute one SGD step; decide whether to compute preconditioner this
-          // iter We compute it every iter if compute_precond_each_iter, else
+          // Compute one SGD step and decide whether to compute preconditioner this
+          // iter. We compute it every iter if compute_precond_each_iter, else
           // let the optimizer refresh at needed cadence
           VectorXd param = opt_vec[i].sgd(0.1, // eps
                                           1,   // one step per loop
@@ -442,17 +549,10 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       }
       B *= ((double)n / (m - 1));
 
-      // W above is the marginal variance of the iterates. Gelman-Rubin needs
-      // the variance the chain mean would have, times n -- i.e. the asymptotic
-      // variance sigma^2 * tau. For independent draws the two coincide and
-      // R_hat -> 1; for SGD iterates they differ by the integrated
-      // autocorrelation time, so using the marginal variance biases R_hat up
-      // by sqrt(1 + (tau-1)/n) no matter how well the chains agree.
-      //
-      // Estimate the asymptotic variance by non-overlapping batch means:
-      // split each chain's batch into n_sub_batch blocks, and take
-      //     var_hat(chain mean) = var(block means) / n_sub_batch,
-      //     W_asym               = n * var_hat(chain mean).
+      // Gelman-Rubin needs the asymptotic variance, not the marginal variance
+      // of the iterates: for autocorrelated draws the two differ by tau and
+      // R_hat is biased up. Estimate it by non-overlapping batch means,
+      //     W_asym = n * var(block means) / n_sub_batch.
       Eigen::RowVectorXd W_eff = W;
       if (n_sub_batch >= 2) {
         Eigen::RowVectorXd var_of_chain_mean =
@@ -504,8 +604,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 
       // Record this batch's sub-batch means (and their across-chain variance)
       // so the trend window can be built from them. With too short a batch to
-      // sub-divide, fall back to one point per batch, which is what the test
-      // used before.
+      // sub-divide, fall back to one point per batch.
       if (n_sub_batch >= 2) {
         for (int b = 0; b < n_sub_batch; ++b) {
           if (sub_batch_count[b] <= 0)
@@ -542,14 +641,15 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       // Select the regression window: n_slope_check points, evenly spaced,
       // over the second half of the history.
       const int hist_len = (int)hist_mean.size();
-      const bool window_ready = (hist_len >= n_slope_check);
+      // enough FRESH points (post any step-size change) to fill the window
+      const bool window_ready = (hist_len - hist_floor >= n_slope_check);
       MatrixXd win_means(n_slope_check, n_params);
       MatrixXd win_vars(n_slope_check, n_params);
       double win_span_iters = 0.0;
       if (window_ready) {
-        int lo = hist_len / 2;
+        int lo = std::max(hist_floor, (hist_len + hist_floor) / 2);
         if (hist_len - lo < n_slope_check)
-          lo = std::max(0, hist_len - n_slope_check);
+          lo = std::max(hist_floor, hist_len - n_slope_check);
         for (int k = 0; k < n_slope_check; ++k) {
           int id = (n_slope_check == 1)
                        ? (hist_len - 1)
@@ -571,14 +671,12 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 
 
       // Recompute R-hat from the per-chain sub-batch means spanning the second
-      // half of the run, rather than from the current batch alone. Same
-      // Gelman-Rubin estimator, same batch-means correction for the asymptotic
-      // variance -- only the window is longer, which is what makes it stable.
-      if (window_ready && (int)hist_chain_mean.size() >= n_slope_check) {
+      // half of the run, rather than from the current batch alone.
+      if (window_ready && (int)hist_chain_mean.size() - hist_floor >= n_slope_check) {
         int L = (int)hist_chain_mean.size();
-        int lo = L / 2;
+        int lo = std::max(hist_floor, (L + hist_floor) / 2);
         if (L - lo < n_slope_check)
-          lo = std::max(0, L - n_slope_check);
+          lo = std::max(hist_floor, L - n_slope_check);
         int n_blk = L - lo;
         int n_win_iter = hist_iter[L - 1] - hist_iter[lo] +
                          (hist_iter.size() > 1
@@ -620,51 +718,459 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
         }
       }
 
+
+      {
+        se_stat = VectorXd::Constant(n_params, NA_REAL);
+        if (sgd_method == "precond_sgd") {
+          MatrixXd P = MatrixXd::Zero(n_params, n_params);
+          for (int c = 0; c < n_chains; c++)
+            P += opt_vec[c].get_preconditioner();
+          P /= (double)n_chains;
+          Eigen::FullPivLU<MatrixXd> lu(P);
+          if (lu.isInvertible()) {
+            MatrixXd Pinv = lu.inverse();
+            for (int k = 0; k < n_params; k++)
+              se_stat(k) = (Pinv(k, k) > 0) ? std::sqrt(Pinv(k, k)) : NA_REAL;
+          }
+        }
+        // se_stat is from the complete-data information, so it understates the
+        // true standard error by the missing-information fraction.
+        int Lh = (int)hist_chain_mean.size();
+        int loh = std::max(hist_floor, (Lh + hist_floor) / 2);
+        if (Lh - loh < n_slope_check)
+          loh = std::max(hist_floor, Lh - n_slope_check);
+        int nblk = Lh - loh;
+        for (int k = 0; k < n_params; k++) {
+          double mcb = NA_REAL, mcw = NA_REAL, est = NA_REAL;
+          mc_se(k) = NA_REAL;
+          if (nblk >= 2) {
+            VectorXd cmean(n_chains);
+            for (int c = 0; c < n_chains; c++) {
+              double acc = 0;
+              for (int b = loh; b < Lh; b++)
+                acc += hist_chain_mean[b](c, k);
+              cmean(c) = acc / (double)nblk;
+            }
+            est = cmean.mean();
+            if (n_chains > 1) {
+              double v = (cmean.array() - est).square().sum() / (n_chains - 1);
+              mcb = std::sqrt(v / n_chains);
+            }
+            double wsum = 0;
+            for (int c = 0; c < n_chains; c++) {
+              double s2 = 0;
+              for (int b = loh; b < Lh; b++)
+                s2 += std::pow(hist_chain_mean[b](c, k) - cmean(c), 2);
+              s2 /= (double)(nblk - 1);
+              wsum += s2 / (double)nblk; // var of this chain's mean
+            }
+            mcw = std::sqrt(wsum / (double)(n_chains * n_chains));
+            // Within-chain batch means, not the across-chain spread. Between-chain
+            // disagreement is what R-hat already tests.
+            mc_se(k) = mcw;
+          }
+          double info_kk = NA_REAL;
+          {
+            MatrixXd P = MatrixXd::Zero(n_params, n_params);
+            for (int c = 0; c < n_chains; c++)
+              P += opt_vec[c].get_preconditioner();
+            info_kk = P(k, k) / n_chains;
+          }
+          conv_diag.push_back({(double)steps, (double)k, est, mcb, mcw,
+                               se_stat(k), final_R_hat(k),
+                               last_trend_ready ? last_tstats[k] : NA_REAL,
+                               last_trend_ready ? last_rel_drift[k] : NA_REAL,
+                               info_kk});
+        }
+      }
+
       if (param_conv_check && curr_batch + 1 >= n_min_batch) {
         converge =
             check_conv(win_means, win_vars, n_slope_check - 1, n_slope_check,
                        std_lim, trend_lim, par_names, print_check_info,
                        batch_steps, max_R_hat, R_hat, trend_std_conv_check,
-                       R_hat_conv_check, n_chains, trend_use_tstat,
+                       R_hat_conv_check, n_chains,
                        use_std_check, trend_rel_lim, win_span_iters,
                        window_ready, curr_batch + 1, &last_rel_drift,
                        &last_conv_rhat, &last_conv_trend_std, &last_std_ratio,
                        &last_slopes, &last_tstats, &last_trend_ready);
-        // COMPACT PROGRESS, for long single runs.
+
+        // Stationarity does not mean the answer is pinned down: constant-step
+        // SGD settles into a distribution whose width is set by the step size.
+        // Require the optimiser's own error to be small beside the statistical
+        // error, se_stat = sqrt(diag(P^-1)) from the preconditioner, smoothed
+        // over checkpoints. Skipped for optimisers with no preconditioner.
+        std::vector<bool> mc_ok(n_params, true);
+        bool mc_checked = false;
+        // Precision belongs to the polish phase in stationarity mode. Leaving
+        // it here would defeat the point: the search would still have to wait
+        // for the Monte Carlo error of the running estimate to come down, which
+        // is the very cost that averaging is supposed to absorb. se_smooth is
+        // still maintained below so the polish has a precision reference.
+        if (mc_se_conv_check && !stationarity_mode &&
+            sgd_method == "precond_sgd") {
+          for (int k = 0; k < n_params; k++) {
+            if (!R_finite(se_stat(k)) || se_stat(k) <= 0)
+              continue;
+            se_smooth(k) = R_finite(se_smooth(k))
+                               ? (0.7 * se_smooth(k) + 0.3 * se_stat(k))
+                               : se_stat(k);
+            if (!R_finite(mc_se(k)) || settle_left > 0)
+              continue;
+            mc_smooth(k) = R_finite(mc_smooth(k))
+                               ? (0.7 * mc_smooth(k) + 0.3 * mc_se(k))
+                               : mc_se(k);
+            mc_checked = true;
+            mc_ok[k] = (mc_smooth(k) <= mc_se_lim * se_smooth(k));
+          }
+          if (mc_checked)
+            for (int k = 0; k < n_params; k++)
+              converge[k] = converge[k] && mc_ok[k];
+        }
+
+        if (stationarity_mode && sgd_method == "precond_sgd") {
+          for (int k = 0; k < n_params; k++) {
+            if (!R_finite(se_stat(k)) || se_stat(k) <= 0) continue;
+            se_smooth(k) = R_finite(se_smooth(k))
+                               ? (0.7 * se_smooth(k) + 0.3 * se_stat(k))
+                               : se_stat(k);
+          }
+        }
+
+        // Per-parameter split-half (Geweke) stationarity: has the running
+        // mean over the first half of the recent window come to agree with the
+        // second half, to within its own Monte Carlo error? Scaled by the noise
+        // rather than by an absolute rate, so a short window cannot pass it by
+        // being uninformative.
+        std::vector<bool> stationary_k(n_params, false);
+        std::vector<double> stationary_z(n_params, NA_REAL);
+        // Running signed / absolute half-differences, per parameter. A parameter
+        // still travelling toward stationarity moves the SAME way at successive
+        // checkpoints, so |sum| / sum|.| stays near 1; one that has settled but
+        // wanders in a flat direction cancels and the ratio collapses.
+
+        bool stationarity_ready = false;
+        {
+          const int L = (int)hist_mean.size();
+          const int navail = L - hist_floor;
+          if (navail >= 16) {
+            stationarity_ready = true;
+            // Window length from the measured correlation length. The test
+            // needs enough effective samples per half: with autocorrelation
+            // time tau (in sub-batches) a window of W carries only W/tau, so a
+            // fixed W suits one mixing rate only. tau is the ratio of the
+            // batch-means variance to the naive variance of the same mean.
+            int nwin;
+            if (stationarity_window > 0) {
+              nwin = std::min(navail, stationarity_window);
+            } else {
+              const int nest = std::min(navail, 64);
+              const int e0 = L - nest;
+              double tau_max = 1.0;
+              const int nb = std::max(2, (int)std::floor(std::sqrt((double)nest)));
+              const int blen = nest / nb;
+              if (blen >= 1) {
+                for (int k2 = 0; k2 < n_params; k2++) {
+                  double sm = 0.0, sq = 0.0;
+                  for (int i2 = e0; i2 < L; ++i2) {
+                    const double x = hist_mean[i2][k2]; sm += x; sq += x * x; }
+                  const double mn2 = sm / (double)nest;
+                  const double v_naive =
+                      (sq - (double)nest * mn2 * mn2) / (double)(nest - 1) /
+                      (double)nest;
+                  double bs = 0.0, bq = 0.0;
+                  for (int b = 0; b < nb; b++) {
+                    double bm2 = 0.0;
+                    for (int t = 0; t < blen; t++)
+                      bm2 += hist_mean[e0 + b * blen + t][k2];
+                    bm2 /= (double)blen;
+                    bs += bm2; bq += bm2 * bm2;
+                  }
+                  const double mb2 = bs / (double)nb;
+                  const double v_batch =
+                      (bq - (double)nb * mb2 * mb2) / (double)(nb - 1) /
+                      (double)nb;
+                  if (v_naive > 0 && v_batch > 0) {
+                    const double tau = v_batch / v_naive;
+                    if (R_finite(tau) && tau > tau_max) tau_max = tau;
+                  }
+                }
+              }
+              if (verbose_enabled && (curr_batch % 5 == 0))
+                Rcpp::Rcout << "[stat] tau_hat = " << tau_max
+                            << "  navail = " << navail << std::endl;
+              const double want = 2.0 * stationarity_eff * tau_max;
+              nwin = (int)std::ceil(want);
+              if (nwin < 16) nwin = 16;
+              if (nwin > navail) stationarity_ready = false;
+            }
+            if (!stationarity_ready) nwin = navail;  // values unused below
+            const int win0 = L - nwin;
+            const int half = nwin / 2;
+            const int a0 = win0, a1 = win0 + half;
+            const int b0 = L - half;
+            const bool have_chains =
+                ((int)hist_chain_mean.size() == L) && n_chains > 1;
+            for (int k = 0; k < n_params; k++) {
+              // se of the half-difference. Sub-batch means are strongly
+              // autocorrelated, so a naive variance understates it and the test
+              // becomes impossible to pass. Take the larger of two honest
+              // estimators: the spread of each chain's own half-difference
+              // and batch means within the window.
+              double mA = 0.0, mB = 0.0;
+              for (int i2 = a0; i2 < a1; ++i2) mA += hist_mean[i2][k];
+              for (int i2 = b0; i2 < L; ++i2) mB += hist_mean[i2][k];
+              mA /= (double)half; mB /= (double)half;
+              const double diff = std::fabs(mA - mB);
+
+              double se_between = 0.0;
+              if (have_chains) {
+                double dsum = 0.0, dsq = 0.0;
+                for (int c = 0; c < n_chains; c++) {
+                  double cA = 0.0, cB = 0.0;
+                  for (int i2 = a0; i2 < a1; ++i2) cA += hist_chain_mean[i2](c, k);
+                  for (int i2 = b0; i2 < L; ++i2) cB += hist_chain_mean[i2](c, k);
+                  const double dc = cA / (double)half - cB / (double)half;
+                  dsum += dc; dsq += dc * dc;
+                }
+                const double dbar = dsum / (double)n_chains;
+                const double dv =
+                    (dsq - (double)n_chains * dbar * dbar) / (double)(n_chains - 1);
+                if (dv > 0) se_between = std::sqrt(dv / (double)n_chains);
+              }
+
+              double se_batch = 0.0;
+              {
+                const int nb = std::max(2, (int)std::floor(std::sqrt((double)half)));
+                const int blen = half / nb;
+                if (blen >= 1 && nb >= 2) {
+                  double sA = 0.0, qA = 0.0, sB = 0.0, qB = 0.0;
+                  for (int b = 0; b < nb; b++) {
+                    double ba = 0.0, bb = 0.0;
+                    for (int t = 0; t < blen; t++) {
+                      ba += hist_mean[a0 + b * blen + t][k];
+                      bb += hist_mean[b0 + b * blen + t][k];
+                    }
+                    ba /= (double)blen; bb /= (double)blen;
+                    sA += ba; qA += ba * ba; sB += bb; qB += bb * bb;
+                  }
+                  const double mAb = sA / nb, mBb = sB / nb;
+                  const double vA = (qA - nb * mAb * mAb) / (double)(nb - 1);
+                  const double vB = (qB - nb * mBb * mBb) / (double)(nb - 1);
+                  if (vA > 0 && vB > 0)
+                    se_batch = std::sqrt(vA / (double)nb + vB / (double)nb);
+                }
+              }
+
+              const double se = std::max(se_between, se_batch);
+              const bool ok = R_finite(se) && se > 0.0;
+
+              // Magnitude, not significance. se(diff) shrinks as the chains
+              // settle, so a z-test gets harder to pass the longer it runs.
+              // Reference = max(se_stat, se of the half-difference). se_stat
+              // alone fails at both extremes: where the data pin a parameter
+              // tighter than the sampler's own noise it is unreachable.
+              const double ref =
+                  std::max(R_finite(se_stat(k)) ? se_stat(k) : 0.0,
+                           (R_finite(se) && se > 0.0) ? se : 0.0);
+              const bool have_ss = ref > 0.0;
+              stationary_z[k] = have_ss ? (diff / ref) : NA_REAL;
+              stationary_k[k] = have_ss && diff <= stationarity_ratio_lim * ref;
+              if (stationarity_ready) {
+                if (!stat_dir_init) {
+                  stat_dir_hist.assign(n_params, std::deque<double>());
+                  stat_flat.assign(n_params, false);
+                  stat_dir_init = true;
+                }
+                stat_dir_hist[k].push_back(mB - mA);
+                while ((int)stat_dir_hist[k].size() >
+                       2 * stationarity_min_checks)
+                  stat_dir_hist[k].pop_front();
+              }
+              // Only a parameter that is both unsettled and non-directional is
+              // a flat direction. One still converging is directional, so it is
+              // never flagged -- it keeps the run going, which is the point.
+              if (!stationary_k[k] && stat_dir_init &&
+                  (int)stat_dir_hist[k].size() >= stationarity_min_checks) {
+                double dsum = 0.0, dabs = 0.0;
+                for (double v : stat_dir_hist[k]) {
+                  dsum += v; dabs += std::fabs(v); }
+                if (dabs <= 0.0) continue;
+                const double dir = std::fabs(dsum) / dabs;
+                if (dir < stationarity_dir_lim && !stat_flat[k]) {
+                  stat_flat[k] = true;
+                  if (verbose_enabled) {
+                    ngme_io::err() << "[stationarity] "
+                                << (k < (int)par_names.size() ? par_names[k]
+                                                             : std::string("?"))
+                                << ": flat direction (moves "
+                                << diff / se_stat(k)
+                                << " x se_stat but cancels, |sum|/sum|.| = "
+                                << dir << "); excluded from the stopping rule."
+                                << std::endl;
+                    R_FlushConsole();
+                  }
+                }
+              }
+            }
+          }
+        }
+        if (stationarity_mode) {
+          for (int k = 0; k < n_params; k++)
+            if (!(stationarity_ready &&
+                  (stationary_k[k] || (stat_dir_init && stat_flat[k]))))
+              converge[k] = false;
+        }
+        // Compact progress for long runs. Printed AFTER every clause has been
+        // applied to converge[], and reporting the statistic that decides.
         if (verbose_enabled && !print_check_info) {
-          int n_ok = 0;
-          int i_rhat = 0, i_t = 0, i_dr = 0;
+          int n_ok = 0, i_rhat = 0, i_z = 0;
           for (int i = 0; i < n_params; i++) {
-            if (converge[i])
-              n_ok++;
-            if (final_R_hat(i) > final_R_hat(i_rhat))
-              i_rhat = i;
-            if (std::abs(last_tstats[i]) > std::abs(last_tstats[i_t]))
-              i_t = i;
-            if (last_rel_drift[i] > last_rel_drift[i_dr])
-              i_dr = i;
+            if (converge[i]) n_ok++;
+            if (final_R_hat(i) > final_R_hat(i_rhat)) i_rhat = i;
+            if (R_finite(stationary_z[i]) &&
+                (!R_finite(stationary_z[i_z]) ||
+                 stationary_z[i] > stationary_z[i_z]))
+              i_z = i;
           }
           auto nm = [&](int i) {
             return (i < (int)par_names.size()) ? par_names[i] : std::string("?");
           };
-          Rcpp::Rcout << "[iter " << steps << "] " << n_ok << "/" << n_params
+          ngme_io::err() << "[iter " << steps << "] " << n_ok << "/" << n_params
                       << " converged";
+          if (!stationarity_mode) {
+            // Forecast only where precision gates the search. Under
+            // stationarity it gates the polish instead, and mc_smooth is not
+            // maintained here, so there is nothing to forecast from.
+            double worst_ratio = 0.0;
+            for (int k = 0; k < n_params; k++)
+              if (R_finite(mc_smooth(k)) && R_finite(se_smooth(k)) &&
+                  se_smooth(k) > 0)
+                worst_ratio = std::max(
+                    worst_ratio, mc_smooth(k) / (mc_se_lim * se_smooth(k)));
+            if (worst_ratio > 1.0)  // mc_se ~ 1/sqrt(n), so this is a forecast
+              ngme_io::err() << "  [precision needs ~"
+                          << (long)std::ceil(steps * worst_ratio * worst_ratio)
+                          << " iters]";
+          }
           if (n_ok < n_params) {
-            Rcpp::Rcout << "  worst: R_hat " << std::fixed
+            ngme_io::err() << "  worst: R_hat " << std::fixed
                         << std::setprecision(3) << final_R_hat(i_rhat) << " ("
                         << nm(i_rhat) << ")";
-            if (last_trend_ready) {
-              Rcpp::Rcout << ", |t| " << std::setprecision(2)
-                          << std::abs(last_tstats[i_t]) << " (" << nm(i_t)
-                          << "), drift/100 " << std::setprecision(2)
-                          << (100.0 * last_rel_drift[i_dr]) << "% (" << nm(i_dr)
+            if (stationarity_mode && R_finite(stationary_z[i_z]))
+
+              ngme_io::err() << ", move/ref " << std::setprecision(2)
+                          << stationary_z[i_z] << " (" << nm(i_z) << ", pass <= "
+                          << std::setprecision(2) << stationarity_ratio_lim
                           << ")";
+            else if (last_trend_ready)
+              ngme_io::err() << ", drift/100 " << std::setprecision(2)
+                          << (100.0 * last_rel_drift[0]) << "%";
+          }
+          ngme_io::err() << std::endl;
+          // Current parameter values reported on the optimiser's theta scale.
+          ngme_io::err() << "           theta:";
+          for (int i = 0; i < n_params; i++)
+            ngme_io::err() << " " << nm(i) << "=" << std::fixed
+                           << std::setprecision(4) << means(curr_batch, i);
+          ngme_io::err() << std::defaultfloat << std::setprecision(6)
+                         << std::endl;
+          R_FlushConsole();
+        }
+
+
+        if (schedule_auto_start && !schedule_armed) {
+          const int L = (int)hist_mean.size();
+          const int navail = L - hist_floor;
+          if (navail >= 8) {
+            const int half = navail / 2;
+            const int a0 = hist_floor, a1 = hist_floor + half;
+            const int b0 = L - half;
+            bool stationary = true;
+            for (int k = 0; k < n_params && stationary; k++) {
+              double mA = 0.0, mB = 0.0;
+              for (int i = a0; i < a1; ++i) mA += hist_mean[i][k];
+              for (int i = b0; i < L; ++i) mB += hist_mean[i][k];
+              mA /= (double)half;
+              mB /= (double)half;
+              double vA = 0.0, vB = 0.0;
+              for (int i = a0; i < a1; ++i) {
+                const double d = hist_mean[i][k] - mA; vA += d * d;
+              }
+              for (int i = b0; i < L; ++i) {
+                const double d = hist_mean[i][k] - mB; vB += d * d;
+              }
+              // batch-means standard error of each half-average
+              vA /= (double)half * (double)(half - 1);
+              vB /= (double)half * (double)(half - 1);
+              const double se = std::sqrt(vA + vB);
+              if (!R_finite(se) || !(se > 0.0) ||
+                  std::fabs(mA - mB) > schedule_arm_z * se)
+                stationary = false;
+            }
+            if (stationary)
+              schedule_ready_count++;
+            else
+              schedule_ready_count = 0;
+            if (schedule_ready_count >= n_conv_batch) {
+              schedule_armed = true;
+              for (int c = 0; c < n_chains; c++)
+                opt_vec[c].set_schedule_burnin(steps);
+              if (verbose_enabled)
+                Rcpp::Rcout << "[schedule] Polyak average stationary at "
+                            << "iteration " << steps
+                            << "; step-size decay starts here" << std::endl;
             }
           }
-          Rcpp::Rcout << std::endl;
         }
+
         bool all_params_ok =
             std::find(begin(converge), end(converge), false) == end(converge);
+
+        // Stationary but imprecise: shrink eta rather than iterate. mc_se
+        // falls as 1/sqrt(n) around a distribution whose width is set by eta,
+        // so narrowing it (width ~ sqrt(eta)) is the standard remedy. Only
+        // after the transient is over, and capped so a hopeless fit ends.
+        if (settle_left > 0)
+          settle_left--;
+        if (!all_params_ok && mc_checked && settle_left == 0 &&
+            n_stepsize_decays < max_stepsize_decays) {
+          bool stationary = true;
+          for (int k = 0; k < n_params; k++) {
+            if (R_hat_conv_check && !last_conv_rhat[k]) stationary = false;
+            if (trend_std_conv_check &&
+                (!last_trend_ready || !last_conv_trend_std[k])) stationary = false;
+          }
+          if (stationary) {
+            n_stepsize_decays++;
+            stepsize_decay_scale *= stepsize_decay_precision_gamma;
+            // everything measured so far belongs to the old step size
+            hist_floor = (int)hist_mean.size();
+            settle_left = n_settle_checks;
+            mc_smooth = VectorXd::Constant(n_params, NA_REAL);
+            for (int c = 0; c < n_chains; c++) {
+              opt_vec[c].set_stepsize_decay_enabled(true);
+              opt_vec[c].set_stepsize_decay_scale(stepsize_decay_scale);
+            }
+            consec_converged = 0;
+            if (verbose_enabled) {
+              double worst = 0.0;
+              int kw = 0;
+              for (int k = 0; k < n_params; k++)
+                if (R_finite(mc_se(k)) && R_finite(se_smooth(k)) &&
+                    se_smooth(k) > 0 && mc_se(k) / se_smooth(k) > worst) {
+                  worst = mc_se(k) / se_smooth(k);
+                  kw = k;
+                }
+              ngme_io::err() << "[iter " << steps
+                          << "] stationary but imprecise (mc_se/se = "
+                          << std::fixed << std::setprecision(2) << worst << " on "
+                          << (kw < (int)par_names.size() ? par_names[kw] : "?")
+                          << "); stepsize x " << stepsize_decay_precision_gamma
+                          << " -> scale " << stepsize_decay_scale << std::endl;
+            }
+          }
+        }
         // Require the criteria to hold on n_conv_batch consecutive checkpoints.
         // A single passing checkpoint is weak evidence: R-hat bounces around
         // its threshold from batch to batch even long after the chains mix.
@@ -673,12 +1179,13 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
         if (batch_converged)
           converged_by_param = true;
 
-        // Trend-triggered step-size reduction.  d
+        // Trend-triggered step-size reduction.
         if (stepsize_decay_on_trend && last_trend_ready &&
             trend_decay_cooldown <= 0) {
           bool no_drift = true;
           for (int i = 0; i < n_params; i++)
-            if (!(std::abs(last_tstats[i]) <= trend_lim))
+            if (!(R_finite(last_rel_drift[i]) &&
+                  last_rel_drift[i] <= trend_rel_lim))
               no_drift = false;
           if (no_drift) {
             stepsize_decay_scale *= stepsize_decay_gamma;
@@ -757,16 +1264,41 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   // The average is Polyak-Ruppert: the mean of the iterates over the window,
   MatrixXd polish_sum = MatrixXd::Zero(n_chains, n_params);
   int polish_done = 0;
+  // one passing check is a coin flip on a noisy statistic; require two
+  int polish_precise_streak = 0;
   // steps grows during the polish phase too, so remember where the stopping
   // rule actually fired
   const int steps_at_convergence = steps;
-  // Never polish for longer than the fit itself ran. The budget is a fixed
-  // count, which is the right shape for a normal fit but disproportionate for a
-  // very short one.
-  // Also, only polish a run that actually converged.
-  const int polish_budget = all_converge ? std::min(polish_iterations, steps) : 0;
+  // Only polish a converged run. The "no longer than the search" cap applies
+  // to drift mode only: under stationarity the search is deliberately short and
+  // the averaging is what buys precision, so that cap would bound the precision
+  // by the length of the search.
+  const int polish_budget =
+      all_converge ? (stationarity_mode ? polish_iterations
+                                        : std::min(polish_iterations, steps))
+                   : 0;
+  // How often to ask whether the average is precise enough to stop.
+  const int polish_check_every = std::max(20, batch_steps);
+  // Per-chain batch sums over the polish window, so the Monte Carlo error of
+  // the average can be estimated from batch means as well as from the spread
+  // between chains.
+  const int polish_batch_len = std::max(10, polish_check_every / 4);
+  // Step floor from the chains' own spread.  The polish decays the step to
+  // remove the O(eta) bias, but averaging only reduces error while the chains
+  // still mix.
+  MatrixXd polish_cur = MatrixXd::Zero(n_chains, n_params);
+  MatrixXd polish_prev = MatrixXd::Zero(n_chains, n_params);
+  MatrixXd polish_incr_sq = MatrixXd::Zero(n_chains, n_params);
+  int polish_incr_n = 0;
+  bool polish_prev_set = false;
+  double polish_floor_scale = 0.0;  // 0 = no floor in force
+  std::vector<bool> precision_limited(n_params, false);
+  std::vector<std::vector<Eigen::VectorXd>> polish_batch_means(n_chains);
+  MatrixXd polish_batch_sum = MatrixXd::Zero(n_chains, n_params);
+  int polish_batch_fill = 0;
   if (polish_budget > 0 && n_chains > 0) {
     double polish_scale = stepsize_decay_scale * polish_stepsize_factor;
+    double polish_cur_scale = polish_scale;
     for (i = 0; i < n_chains; i++) {
       opt_vec[i].set_stepsize_decay_enabled(true);
       opt_vec[i].set_stepsize_decay_scale(polish_scale);
@@ -774,6 +1306,23 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     std::atomic<bool> polish_failed(false);
     std::string polish_error;
     for (int step = 0; step < polish_budget; step++) {
+      // Normalised so the decay starts at exactly the polish scale, matching
+      // the schedule used in the search phase. No floor here: the whole point
+      // is to let eta go to zero so the O(eta) bias goes with it, and the
+      // averaging is what controls the variance.
+      if (polish_decay_alpha > 0.0) {
+        double sc =
+            polish_scale *
+            std::pow(1.0 + (double)step / polish_decay_t0, -polish_decay_alpha);
+        // Never below the spread-derived floor, and the floor itself is capped
+        // at the step the polish started from, so the worst case is that the
+        // polish degrades to constant-step averaging and never an increase.
+        if (polish_floor_scale > 0.0 && sc < polish_floor_scale)
+          sc = polish_floor_scale;
+        for (int c = 0; c < n_chains; c++)
+          opt_vec[c].set_stepsize_decay_scale(sc);
+        polish_cur_scale = sc;
+      }
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
 #endif
@@ -787,7 +1336,11 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
 #ifdef _OPENMP
 #pragma omp critical
 #endif
-          { polish_sum.row(i) += param; }
+          {
+            polish_sum.row(i) += param;
+            polish_batch_sum.row(i) += param;
+            polish_cur.row(i) = param.transpose();
+          }
         } catch (const std::exception &e) {
 #ifdef _OPENMP
 #pragma omp critical(ngme_parallel_exception)
@@ -804,6 +1357,188 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
         break;
       polish_done++;
       steps++;
+      if (polish_prev_set) {
+        polish_incr_sq.array() += (polish_cur - polish_prev).array().square();
+        polish_incr_n++;
+      }
+      polish_prev = polish_cur;
+      polish_prev_set = true;
+      if (++polish_batch_fill >= polish_batch_len) {
+        for (int c = 0; c < n_chains; c++)
+          polish_batch_means[c].push_back(
+              (polish_batch_sum.row(c) / (double)polish_batch_fill).transpose());
+        polish_batch_sum.setZero();
+        polish_batch_fill = 0;
+      }
+
+      // Stop when the average is precise. The chains are independent, so the
+      // Monte Carlo error of the reported estimate is the spread of
+      // those per-chain averages divided by sqrt(n_chains). Polishing until
+      // that sits under mc_se_lim * se_stat asks for the Monte Carlo error to
+      // be a fraction of the statistical error, which is the point at which
+      // further iterations stop buying anything the data can support.
+      if (n_chains > 1 && polish_done >= polish_check_every &&
+          (polish_done % polish_check_every == 0)) {
+        // Classify each parameter by whether averaging can still work.
+        // r_k = delta_k * sqrt(H) / S_k, dimensionless: can this chain's random
+        // walk cross the current between-chain spread within the horizon?
+        // delta_k is measured after the preconditioner, so no per-parameter
+        // scale knowledge is needed and the same rule applies to every model.
+        if (polish_incr_n > 0) {
+          const double H = (double)std::max(1, polish_budget);
+          for (int k = 0; k < n_params; k++) {
+            if (!R_finite(se_stat(k)) || se_stat(k) <= 0) continue;
+            // delta: rms per-iteration increment, pooled over chains. The
+            // increment of a random walk has variance 2*sigma^2, hence the /2.
+            double dsq = 0.0;
+            for (int c = 0; c < n_chains; c++) dsq += polish_incr_sq(c, k);
+            const double delta =
+                std::sqrt(dsq / (double)(n_chains * polish_incr_n) / 2.0);
+            // S: spread of the chains' current positions
+            double m = 0.0;
+            for (int c = 0; c < n_chains; c++) m += polish_cur(c, k);
+            m /= (double)n_chains;
+            double sv = 0.0;
+            for (int c = 0; c < n_chains; c++) {
+              const double d = polish_cur(c, k) - m; sv += d * d; }
+            const double S = (n_chains > 1)
+                                 ? std::sqrt(sv / (double)(n_chains - 1)) : 0.0;
+            if (!(S > 0.0) || !R_finite(delta) || delta <= 0.0) continue;
+            const double r = delta * std::sqrt(H) / S;
+            // delta scales linearly with the step, so r at the polish's
+            // STARTING step is r rescaled by that ratio.
+            const double r_at_start =
+                (polish_cur_scale > 0.0) ? r * (polish_scale / polish_cur_scale)
+                                         : r;
+            if (r_at_start < 1.0) {
+              // REGIME 3: unreachable even without any decay. No schedule fixes
+              // this -- the chains cannot cross their own spread at full step.
+              // Report it instead of letting it burn the whole budget.
+              if (!precision_limited[k] && verbose_enabled) {
+                ngme_io::err() << "[polish] "
+                            << (k < (int)par_names.size() ? par_names[k] : std::string("?"))
+                            << ": precision-limited (chains cannot cross their"
+                            << " spread at full step, r = " << r_at_start
+                            << "); excluded from the stopping rule."
+                            << std::endl;
+                R_FlushConsole();
+              }
+              precision_limited[k] = true;
+            }
+          }
+          // Constant lower bound, a fraction of the polish-start step. No
+          // bound and the chains freeze; a bound that feeds back on r and the
+          // step never decays. A constant does neither.
+          if (polish_floor_scale <= 0.0 && polish_floor_frac > 0.0) {
+            polish_floor_scale = polish_floor_frac * polish_scale;
+            if (verbose_enabled) {
+              Rcpp::Rcout << "[polish] step bounded below at "
+                          << polish_floor_scale << " (" << polish_floor_frac
+                          << " x the polish-start step)" << std::endl;
+              R_FlushConsole();
+            }
+          }
+          polish_incr_sq.setZero();
+          polish_incr_n = 0;
+        }
+        // Exclusions are for the exceptional parameter. If most are excluded
+        // the rule tests almost nothing.
+        int n_checkable = 0, n_excluded = 0;
+        for (int k = 0; k < n_params; k++) {
+          if (!R_finite(se_stat(k)) || se_stat(k) <= 0) continue;
+          if (precision_limited[k]) n_excluded++; else n_checkable++;
+        }
+        bool precise = (n_checkable > n_excluded);
+        if (!precise && verbose_enabled && polish_precise_streak == 0)
+          ngme_io::err() << "[polish] " << n_excluded << " of "
+                      << (n_checkable + n_excluded)
+                      << " parameters are precision-limited: too many to"
+                      << " certify precision, polishing to the cap."
+                      << std::endl;
+        for (int k = 0; k < n_params && precise; k++) {
+          if (!R_finite(se_stat(k)) || se_stat(k) <= 0) continue;
+          if (precision_limited[k]) continue;  // regime 3: cannot be met
+          double m = 0.0;
+          for (int c = 0; c < n_chains; c++)
+            m += polish_sum(c, k) / (double)polish_done;
+          m /= (double)n_chains;
+          double v = 0.0;
+          for (int c = 0; c < n_chains; c++) {
+            const double d = polish_sum(c, k) / (double)polish_done - m;
+            v += d * d;
+          }
+          v /= (double)(n_chains - 1);
+          double mc_se = std::sqrt(v / (double)n_chains);
+
+          // Batch-means estimate of the same quantity, pooled over chains.
+          // var(chain average) ~ var(batch means)/B, and the estimate reported
+          // is the mean over chains, so its variance is that over n_chains.
+          long df = 0; double pooled = 0.0;
+          for (int c = 0; c < n_chains; c++) {
+            const int B = (int)polish_batch_means[c].size();
+            if (B < 2) continue;
+            double bm = 0.0;
+            for (int b = 0; b < B; b++) bm += polish_batch_means[c][b](k);
+            bm /= (double)B;
+            double bv = 0.0;
+            for (int b = 0; b < B; b++) {
+              const double d = polish_batch_means[c][b](k) - bm; bv += d * d; }
+            pooled += bv / (double)(B - 1) / (double)B;  // var of this chain's mean
+            df += (B - 1);
+          }
+          if (df >= 4) {
+            const double mc_se_bm =
+                std::sqrt(pooled / (double)(n_chains * n_chains));
+            // Take the larger of the two: they estimate the same quantity, and
+            // being wrong in the conservative direction only costs iterations,
+            // whereas being wrong the other way reports a precision we do not
+            // have.
+            mc_se = std::max(mc_se, mc_se_bm);
+          }
+          if (!(mc_se <= mc_se_lim * se_stat(k))) precise = false;
+
+          // Has the reported average stopped moving? A small mc_se only says
+          // the chains agree about it. The relative target is most lenient
+          // where a parameter is worst identified.
+          if (precise) {
+            double dnum = 0.0, dvar = 0.0; int dchains = 0;
+            for (int c = 0; c < n_chains; c++) {
+              const int B = (int)polish_batch_means[c].size();
+              if (B < 4) continue;
+              const int h = B / 2;
+              double m1 = 0.0, m2 = 0.0;
+              for (int b = 0; b < h; b++) m1 += polish_batch_means[c][b](k);
+              for (int b = B - h; b < B; b++) m2 += polish_batch_means[c][b](k);
+              m1 /= (double)h; m2 /= (double)h;
+              double v = 0.0, bm = 0.0;
+              for (int b = 0; b < B; b++) bm += polish_batch_means[c][b](k);
+              bm /= (double)B;
+              for (int b = 0; b < B; b++) {
+                const double d = polish_batch_means[c][b](k) - bm; v += d * d; }
+              v /= (double)(B - 1);
+              dnum += (m2 - m1);
+              dvar += 2.0 * v / (double)h;  // var of the difference of halves
+              dchains++;
+            }
+            if (dchains > 0) {
+              const double diff = std::abs(dnum / (double)dchains);
+              const double se_d = std::sqrt(dvar) / (double)dchains;
+              const double ref_d =
+                  std::max(R_finite(se_stat(k)) ? se_stat(k) : 0.0,
+                           (R_finite(se_d) && se_d > 0.0) ? se_d : 0.0);
+              if (ref_d > 0.0 && diff > mc_se_lim * ref_d)
+                precise = false;  // the average is still moving
+            }
+          }
+        }
+        polish_precise_streak = precise ? (polish_precise_streak + 1) : 0;
+        if (precise && polish_precise_streak >= 2) {
+          if (verbose_enabled)
+            ngme_io::err() << "Polish reached target precision after "
+                        << polish_done << " iterations" << std::endl;
+          break;
+        }
+      }
     }
     if (polish_failed.load(std::memory_order_relaxed))
       Rcpp::warning("ngme: post-convergence polish stopped early: %s",
@@ -918,6 +1653,18 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   }
   if (n_chains > 1)
     outputs.attr("R_hat") = final_R_hat;
+  {
+    // conv_diag -> a numeric matrix R can read straight into a data.frame
+    const int ncol = 10;
+    Rcpp::NumericMatrix cd((int)conv_diag.size(), ncol);
+    for (size_t r = 0; r < conv_diag.size(); r++)
+      for (int c = 0; c < ncol; c++)
+        cd(r, c) = conv_diag[r][c];
+    Rcpp::colnames(cd) = Rcpp::CharacterVector::create(
+        "iteration", "param", "estimate", "mc_se_between", "mc_se_batch",
+        "se_stat", "R_hat", "t_stat", "drift_per100", "info_kk");
+    outputs.attr("conv_diag") = cd;
+  }
   outputs.attr("chain_params") = Rcpp::wrap(final_params);
   outputs.attr("par_names") = Rcpp::wrap(par_names);
   return outputs;
@@ -950,7 +1697,7 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
            const std::vector<std::string> &par_names, bool print_check_info,
            int batch_steps, double max_R_hat, const VectorXd &R_hat,
            bool trend_std_conv_check, bool R_hat_conv_check, int n_chains,
-           bool trend_use_tstat, bool use_std_check, double trend_rel_lim,
+           bool use_std_check, double trend_rel_lim,
            double win_span_iters, bool window_ready, int report_batch,
            std::vector<double> *rel_drift_out, std::vector<bool> *conv_rhat_out,
            std::vector<bool> *conv_trend_std_out,
@@ -993,16 +1740,20 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
     }
   }
 
-  if (trend_std_conv_check && trend_ready) {
+  // Computed whenever the window is ready. These are the drift diagnostics reported in
+  // attr(fit, "conv_diag"); leaving them uncomputed under a different criterion
+  // meant conv_diag reported drift_per100 = 0 and t_stat = 0, which reads as
+  // "no drift" when it means "not measured".
+  if (trend_ready) {
     for (int i = 0; i < n_params; i++) {
       std_ratio[i] = std::sqrt(vars(curr_batch, i)) /
                      (std::abs(means(curr_batch, i)) + 1e-5);
       // The raw coefficient of variation is not a convergence statistic: it
       // conflates "the chains disagree" with "this parameter is imprecisely
-      // determined", so a weakly identified parameter (nu) can never pass no
-      // matter how well mixed the chains are. Off by default; R-hat already
+      // determined", so a weakly identified parameter can never pass no
+      // matter how well mixed the chains are. Off by default as R-hat already
       // measures between- vs within-chain disagreement in a scale-free way.
-      if (use_std_check && std_ratio[i] > std_lim) {
+      if (trend_std_conv_check && use_std_check && std_ratio[i] > std_lim) {
         conv_trend_std[i] = false;
       }
     }
@@ -1037,11 +1788,7 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
                       ? beta(1) / std::sqrt(var_slope)
                       : std::numeric_limits<double>::infinity();
 
-      // Scale-free drift test: is the slope distinguishable from zero relative
-      // to its own standard error?
-      double stat = trend_use_tstat ? std::abs(tstats[i]) : std::abs(beta(1));
-
-      // Also require the drift to be material as a rate per 100 iterations.
+      // Drift as a rate per 100 iterations, relative to the parameter's scale.
       double span_pts = (double)(n_slope_check - 1);
       double scale = std::abs(means(curr_batch, i)) +
                      std::sqrt(std::max(0.0, vars(curr_batch, i))) + 1e-10;
@@ -1049,7 +1796,9 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
                             ? (std::abs(beta(1)) * span_pts / win_span_iters)
                             : 0.0;
       rel_drift[i] = 100.0 * per_iter / scale; // fraction of scale per 100 iters
-      if (stat > trend_lim && rel_drift[i] > trend_rel_lim) {
+
+      // Drift-rate test only.
+      if (trend_std_conv_check && rel_drift[i] > trend_rel_lim) {
         conv_trend_std[i] = false;
       }
     }
@@ -1082,8 +1831,7 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
     *trend_ready_out = trend_ready;
 
   if (print_check_info) {
-    // curr_batch indexes the regression WINDOW (the caller passes the selected
-    // points, not the whole history), so the checkpoint number for the reader
+    // curr_batch indexes the regression window, so the checkpoint number for the reader
     // has to be handed in separately. Otherwise every checkpoint prints as
     // "stop n_slope_check".
     Rcpp::Rcout << "\nstop " << report_batch << ":\n";

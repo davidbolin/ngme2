@@ -13,7 +13,6 @@ ngme(
   group = NULL,
   replicate = NULL,
   start = NULL,
-  moving_window = 1,
   prior_beta = NULL,
   debug = FALSE
 )
@@ -40,8 +39,6 @@ ngme(
 \item{replicate}{factor, used for divide data into different replicates}
 
 \item{start}{starting ngme object (usually object from last fit)}
-
-\item{moving_window}{number of iterations to average the estimation}
 
 \item{prior_beta}{prior specification for fixed effects (`beta`), created by
 \code{prior_*()} or \code{priors(...)}.}

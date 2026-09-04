@@ -23,7 +23,6 @@
 #' @param prior_beta prior specification for fixed effects (`beta`), created by
 #'   \code{prior_*()} or \code{priors(...)}.
 #' @param start  starting ngme object (usually object from last fit)
-#' @param moving_window number of iterations to average the estimation
 #' @param debug  toggle debug mode
 #'
 #' @return random effects (for different replicate) + models(fixed effects, measuremnt noise, and latent process)
@@ -54,7 +53,6 @@ ngme <- function(
     group = NULL,
     replicate = NULL,
     start = NULL,
-    moving_window = 1, # return the average estimation of last .. iterations
     prior_beta = NULL,
     debug = FALSE) {
   # -------------  CHECK INPUT ---------------
@@ -256,24 +254,11 @@ ngme <- function(
     message(paste(capture.output(str(ngme_model$replicates[[1]])), collapse = "\n"))
   }
 
-  # TRUE CONTINUATION OF EACH CHAIN.
-  # The block above seeds the model with `start`'s parameters, but that object
-  # holds the AVERAGE over chains -- and estimate_cpp then re-scatters chains
-  # 2..n by N(0, start_sd). Continuing a fit therefore threw away the chains'
-  # own positions and restarted them at new points. Hand C++ each chain's own
-  # final parameter vector instead; it uses no jitter when this is present.
-  #
-  # Only when the parameterisation matches: a fit of a different model, or of
-  # the same model with a parameter newly fixed or freed, has a vector of a
-  # different length or meaning, and silently reusing it would be worse than
-  # not continuing at all.
   continue_chains <- if (is.null(control_opt$continue_chains)) TRUE else
     isTRUE(control_opt$continue_chains)
   if (inherits(start, "ngme") && continue_chains) {
-    # Suppress the cold-start dispersion for EVERY warm start, whether or not
-    # the previous fit carried per-chain parameters. Continuity first; the
-    # per-chain state below is an improvement on top of that, not the condition
-    # for it.
+    # Suppress the cold-start dispersion for every warm start, whether or not
+    # the previous fit carried per-chain parameters.
     control_opt$warm_start_no_jitter <- TRUE
     cp <- attr(start, "chain_params")
     if (is.matrix(cp) && nrow(cp) >= 1) {
@@ -284,12 +269,6 @@ ngme <- function(
         pick <- rep_len(seq_len(nrow(cp)), n_ch)
         control_opt$chain_start <- cp[pick, , drop = FALSE]
 
-        # The LATENT STATE is per chain too. `start` carries the chain AVERAGE
-        # of W and V, and an average of posterior draws is not a draw: it is
-        # over-smoothed (roughly 1/n_chains of the right variance), so restarting
-        # every chain from it biases the first gradients towards too little
-        # field variance. The per-chain states are in `chain_outputs`; hand each
-        # chain its own.
         cout <- attr(start, "chain_outputs")
         if (is.list(cout) && length(cout) >= 1) {
           control_opt$chain_ngme <- lapply(pick, function(k) {
@@ -392,6 +371,9 @@ ngme <- function(
       # owns no rows at all -- use seq_len() rather than `a:b`, which counts
       # backwards when the range is empty and would hand the component a bogus
       # out-of-range row plus a row belonging to its neighbour.
+      # Continue the trajectory ONLY when this fit continues the same model.
+      continue_ok <- inherits(start, "ngme") &&
+        .same_model_for_traj(start, ngme_model)
       idx <- 0
       for (i in seq_along(ngme_model$replicates[[1]]$models)) {
         n_params <- ngme_model$replicates[[1]]$models[[i]]$n_params
@@ -403,7 +385,7 @@ ngme <- function(
 
         attr(ngme_model$replicates[[1]]$models[[i]], "lat_traj") <-
           .continue_traj(
-            if (inherits(start, "ngme"))
+            if (continue_ok)
               attr(start$replicates[[1]]$models[[i]], "lat_traj") else NULL,
             lat_traj_chains)
         idx <- idx + n_params
@@ -452,7 +434,7 @@ ngme <- function(
 
       attr(ngme_model$replicates[[1]], "block_traj") <-
         .continue_traj(
-          if (inherits(start, "ngme"))
+          if (continue_ok)
             attr(start$replicates[[1]], "block_traj") else NULL,
           block_traj)
       attr(outputs, "opt_traj") <- NULL
@@ -470,6 +452,15 @@ ngme <- function(
     # rather than at a re-jittered average of them.
     attr(ngme_model, "chain_params") <- attr(outputs, "chain_params")
     attr(ngme_model, "par_names") <- attr(outputs, "par_names")
+    # per-checkpoint convergence diagnostics, for choosing/auditing a stopping
+    # rule after the fact
+    cd <- attr(outputs, "conv_diag")
+    if (!is.null(cd) && nrow(cd) > 0) {
+      cd <- as.data.frame(cd)
+      pn <- attr(outputs, "par_names")
+      cd$param <- if (!is.null(pn)) pn[cd$param + 1L] else as.character(cd$param)
+      attr(ngme_model, "conv_diag") <- cd
+    }
   } else {
     # Estimation skipped: map fixed effects and X back to the raw covariate
     # scale so outputs are comparable to pre-demean runs.
@@ -520,19 +511,37 @@ ngme <- function(
 
 # Concatenate a previous fit's trajectory with this run's, chain by chain.
 #
-# A trajectory is a list with one (parameters x iterations) matrix per chain,
-# and each ngme() call used to return only ITS OWN path -- so warm-restarting
-# in chunks silently discarded everything before the last chunk. A fit run as
-# 4 x 500 iterations kept 500 and threw away 1500, which is a problem because
-# the optimisation history IS the evidence for convergence, and because the
-# convergence rule could then never see across a chunk boundary.
-#
 # Binding is refused rather than forced when the two do not line up (a
 # different number of chains, or of parameters): a fit whose model changed is
 # not a continuation of the earlier one, and gluing the paths together would
 # produce a trajectory that never happened. In that case only the new path is
 # kept. `n_prev_iters` records where the previous path ended, so a reader can
 # tell the chunks apart.
+#' Is `start` the SAME model as the one just fitted?
+#'
+#' Trajectory continuation is only meaningful when a fit continues an earlier
+#' run of the same model.
+#'
+#' `.continue_traj()` alone cannot tell: it only sees matrices, so its shape
+#' check passes whenever the parameter counts happen to agree.
+#'
+#' @noRd
+.same_model_for_traj <- function(prev, new) {
+  if (!inherits(prev, "ngme") || !inherits(new, "ngme")) return(FALSE)
+  p <- prev$replicates[[1]]; n <- new$replicates[[1]]
+  if (is.null(p) || is.null(n)) return(FALSE)
+  # The parameter names encode the model structure, its noise families and the
+  # parameter count in one comparable vector.
+  if (!identical(p$par_names, n$par_names)) return(FALSE)
+  if (!identical(length(p$models), length(n$models))) return(FALSE)
+  if (!identical(length(p$feff), length(n$feff))) return(FALSE)
+  if (!identical(p$noise$noise_type, n$noise$noise_type)) return(FALSE)
+  sig <- function(m) vapply(m, function(x)
+    paste(x$model, x$noise_type, x$noise$noise_type, x$n_params, x$name,
+          sep = "|"), character(1))
+  identical(sig(p$models), sig(n$models))
+}
+
 .continue_traj <- function(prev, new) {
   if (!is.list(new) || !length(new)) return(new)
   if (!is.list(prev) || !length(prev)) return(new)

@@ -290,12 +290,28 @@ private:
   // instead of nt - 1. Decided once in the constructor: the B lists are fixed
   // data, not parameters, so this cannot change as theta moves.
   bool gamma_time_invariant{false};
+  // BtCs with its FIRST BLOCK ROW removed. That row is the rw1 operator's
+  // trapezoid row, which couples time slice 1 to every other slice; dropping it
+  // is what leaves K block lower-bidiagonal and lets slice 1 carry its own
+  // stationary block instead. Built once -- it is fixed data, not a parameter.
+  SparseMatrix<double, 0, int> BtCs_st;
+  int ns_{0};                  // spatial dimension = Cs.rows()
+  bool stationary_init{true};  // give slice 1 the stationary distribution
+  // Put the while cc factor on the temporal term instead of splitting it
+  // between temporal and spatial, to reduce confounding with sigma.
+  bool cc_variance_free{false};
+  bool block_trace_checked_{false};
 
 public:
   Spacetime(const Rcpp::List &);
 
   void build_KZ(const VectorXd &);
   void update_dK(const VectorXd &);
+  // Exact traces from the diagonal blocks alone. K is block lower-bidiagonal
+  // once the stationary initial condition is in place, so this needs neither
+  // probes nor a factorization of the full (nt*ns) x (nt*ns) operator.
+  bool compute_traces_structured(const VectorXd &,
+                                 const UpdateOptions &) override;
 };
 
 // Bivar

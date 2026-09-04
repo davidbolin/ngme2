@@ -6,12 +6,11 @@
 #' @details
 #' Convergence diagnostics (multi-chain):
 #' * R-hat: per-parameter Gelman–Rubin statistic; passes if \code{R_hat <= max_R_hat}.
-#' * Trend: fits a weighted linear trend over a window of \code{n_slope_check} points and
-#'   passes unless the drift is both distinguishable from zero (\code{|slope| / se(slope) >
-#'   trend_lim}) and materially fast (relative movement per 100 iterations \code{>
-#'   trend_rel_lim}). This is scale-free and independent of \code{n_batch}. Setting
-#'   \code{trend_use_tstat = FALSE} recovers the absolute test \code{|slope| <= trend_lim},
-#'   and \code{use_std_check = TRUE} additionally requires \code{sqrt(var)/|mean| <= std_lim}.
+#' * Trend: fits a weighted linear trend over a window of \code{n_slope_check} points
+#'   and passes when the drift is slower than \code{trend_rel_lim}, as relative
+#'   movement per 100 iterations. This is scale-free and independent of
+#'   \code{n_batch}. \code{use_std_check = TRUE} additionally requires
+#'   \code{sqrt(var)/|mean| <= std_lim}.
 #'   The window points are sub-batch means spread evenly over the SECOND HALF of the run so
 #'   far, so the test is available from the first checkpoint and never regresses through the
 #'   optimiser's initial transient.
@@ -36,13 +35,12 @@
 #'
 #' @param n_parallel_chain number of parallel chains
 #' @param n_batch     number of checkpoints; optimization is split into \code{n_batch} equal batches
-#' @param iters_per_check run how many iterations between each check point (or specify \code{n_batch})
+#' @param iters_per_check how many iterations between convergence checkpoints.
+#'   Equivalent to \code{n_batch = iterations / iters_per_check}; give either, or
+#'   both when they agree.
 #' @param n_min_batch   minimum number of checkpoints before any convergence
 #'   diagnostic is attempted (default 1).
 #' @param n_slope_check number of checkpoints used as the regression window for the trend test
-#' @param trend_use_tstat compare the fitted slope to its own standard error
-#'   (\code{|slope| / se(slope) <= trend_lim}) instead of to an absolute bound. Scale-free
-#'   and independent of \code{n_batch}; with this on, \code{trend_lim} is a t-value (~2-3).
 #' @param use_std_check include the relative-standard-deviation part of the trend/std
 #'   diagnostic. The raw coefficient of variation conflates chain disagreement with
 #'   parameter imprecision, so weakly identified parameters can never pass it.
@@ -53,9 +51,8 @@
 #'   the convergence criteria being met. Set \code{FALSE} for short runs where convergence
 #'   is not expected (e.g. fast unit tests).
 #' @param std_lim         maximum allowed standard deviation
-#' @param trend_lim       maximum allowed drift. With \code{trend_use_tstat = TRUE}
-#'   (default) this is a t-value on the fitted slope (2 ~ "not distinguishable from no
-#'   drift"); with \code{trend_use_tstat = FALSE} it is an absolute bound on the slope.
+#' @param trend_lim reported in \code{attr(fit, "conv_diag")} as a reference
+#'   for the fitted slope's t-statistic; it no longer gates convergence.
 #' @param trend_rel_lim how fast a parameter must actually be MOVING before a
 #'   detectable drift counts as non-convergence, as a fraction of the parameter's
 #'   own scale per 100 iterations The default 0.01 reads as "1\% of itself per
@@ -71,6 +68,22 @@
 #'
 #' @param max_num_threads maximum number of threads used for parallel computing, by default will be set same as n_parallel_chain.
 #' If it is more than n_parallel_chain, the rest will be used to parallel different replicates of the model.
+#' @param step_clip how the per-iteration step is limited.
+#'   \describe{
+#'     \item{\code{"value"}}{the historical behaviour: clip each component at
+#'       \code{max_absolute_step}. Because components are truncated
+#'       independently, it rotates the search direction.}
+#'     \item{\code{"norm"}}{rescale the whole vector when its length exceeds
+#'       \code{max_absolute_step * sqrt(p)}.}
+#'     \item{\code{"adaptive"}}{the default: rescale only steps far out of line
+#'       with the recent typical step length (\code{step_clip_factor} times a
+#'       running average of it), with the \code{"norm"} cap as a backstop.
+#'       Blow-ups are orders of magnitude out and are caught; a step that is
+#'       merely larger than usual, because the method is accumulating one, is
+#'       not.}
+#'   }
+#' @param step_clip_factor for \code{step_clip = "adaptive"}, how many times the
+#'   recent typical step length is still considered a normal step.
 #' @param max_relative_step   max relative step allowed in 1 iteration
 #' @param max_absolute_step   max absolute step allowed in 1 iteration
 #' @param trend_std_conv_check enable the trend/std diagnostic (uses \code{std_lim}, \code{trend_lim}, \code{n_slope_check})
@@ -93,16 +106,41 @@
 #'   expectation \code{E[W | Y, V]} in the gradient (default \code{TRUE}).
 #' @param n_trace_iter  use how many iterations to approximate the trace (Hutchinson’s trick).
 #'   The starting probe budget; with \code{trace_adapt = TRUE} it is retuned during the run.
-#' @param polish_iterations iterations of a post-convergence polish phase, run once the
-#'   stopping rule has fired (or the budget is spent) with the step size scaled by
-#'   \code{polish_stepsize_factor}. The reported estimate is the average of the iterates over
-#'   this window (Polyak-Ruppert), which is what reduces its variance; the smaller step only
-#'   shrinks the ball being averaged over. Capped at the number of iterations the fit actually
-#'   ran, so a very short fit is not handed a disproportionate tail.
-#' @param polish_stepsize_factor multiplier applied to the step size during the polish phase.
-#'   Measured over six optimizer seeds at fixed data, 0.3 cut the estimator's standard
-#'   deviation by about a quarter; too small a factor freezes the chains so there is little
-#'   left to average over, and no reduction at all lets them keep wandering.
+#' @param polish_iterations maximum iterations of the post-convergence polish,
+#'   whose averaged iterates (Polyak-Ruppert) are the reported estimate. It is a
+#'   cap and the polish stops earlier once the precision and drift tests pass.
+#'   The polish runs only if the search converged. A search that exhausts
+#'   \code{iterations} gets no polish at all, and its estimate is the last-batch
+#'   mean rather than an average. The budget is capped at the iterations actually
+#'   run only under \code{conv_criterion = "drift"}; under \code{"stationarity"}
+#'   (the default) the full \code{polish_iterations} is available however short
+#'   the search was.
+#' @param polish_decay_alpha exponent of the step-size decay applied during the
+#'   polish, as \code{(1 + i/polish_decay_t0)^-alpha} in the polish iterations
+#'   \code{i}. Set 0 to hold the polish step size constant.
+#' @param polish_decay_t0 timescale of that decay, in polish iterations.
+#' @param conv_criterion which stopping rule the search phase uses:
+#'   \code{"stationarity"} (default) or \code{"drift"}.
+#' @param stationarity_window length of the comparison window, in checkpoints.
+#'   \code{0} (default) derives it from the measured correlation length.
+#' @param stationarity_eff effective samples per half-window when the window is
+#'   derived (default 1.5).
+#' @param schedule_arm_z threshold for arming the optional step-size schedule
+#'   (\code{stepsize_control}). It does not gate the stationarity criterion,
+#'   which uses \code{stationarity_ratio_lim}.
+#' @param polish_floor_frac lower bound on the polish step, as a fraction of
+#'   the step the polish starts from (default 0.25).
+#' @param stationarity_ratio_lim how far a parameter may move between the two
+#'   halves of the window, as a multiple of \code{se_stat} (default 1.0).
+#' @param stationarity_dir_lim a parameter failing the magnitude test is called a
+#'   flat direction and is excluded from the stopping rule and reported, only if its
+#'   successive half-differences cancel, \code{|sum| / sum|.|} below this
+#'   (default 0.5). One still travelling toward stationarity moves the same way
+#'   each time and keeps the ratio high.
+#' @param stationarity_min_checks checkpoints of history required before a
+#'   parameter may be called a flat direction (default 6).
+#' @param polish_stepsize_factor multiplies the step size at the moment the
+#'   polish begins. Default 1.0.
 #' @param selinv_max_fill use the exact selected (Takahashi) inverse for the
 #'   Rao-Blackwell traces when the Cholesky factor of QQ has \code{nnz(L)/n} at or below
 #'   this, and Hutchinson probes otherwise. Triangular operators (ar1, ou, arma) and 1-d
@@ -189,10 +227,14 @@ control_opt <- function(
     print_check_info = FALSE,
     max_relative_step = 0.5,
     max_absolute_step = 0.5,
+    step_clip = c("adaptive", "norm", "value"),
+    step_clip_factor = 5,
     rao_blackwellization = TRUE,
     n_trace_iter = 10,
-    polish_iterations = 50L,
-    polish_stepsize_factor = 0.3,
+    polish_iterations = 2000L,
+    polish_stepsize_factor = 1.0,
+    polish_decay_alpha = 0.6,
+    polish_decay_t0 = 13.5,
     selinv_max_fill = 4,
     trace_adapt = TRUE,
     trace_adapt_frac = 0.1,
@@ -215,13 +257,28 @@ control_opt <- function(
     std_lim = 0.01,
     trend_lim = 2,
     trend_rel_lim = 0.01,
-    trend_use_tstat = TRUE,
     use_std_check = FALSE,
     n_conv_batch = 2,
     warn_no_convergence = TRUE,
+    schedule_auto_start = FALSE,
+    schedule_min_scale = 0.1,
+    schedule_arm_z = 2,
+    stationarity_window = 0L,
+    stationarity_eff = 1.5,
+    polish_floor_frac = 0.25,
+    stationarity_ratio_lim = 1.0,
+    stationarity_dir_lim = 0.5,
+    stationarity_min_checks = 6L,
+    conv_criterion = c("stationarity", "drift"),
+    mc_se_conv_check = TRUE,
+    mc_se_lim = 0.5,
+    max_stepsize_decays = 1L,
+    n_settle_checks = 3L,
+    stepsize_decay_precision_gamma = 0.5,
     continue_chains = TRUE,
     R_hat_conv_check = TRUE,
     max_R_hat = 1.1) {
+  step_clip <- match.arg(step_clip)
   strategy_list <- c("all", "ws")
   solver_backend_list <- c("eigen", "cholmod", "accelerate", "pardiso")
   solver_factor_list <- c("llt", "ldlt")
@@ -257,14 +314,32 @@ control_opt <- function(
     numerical_eps <- optimizer$numerical_eps
   }
 
-  # if user inputs iters_per_check
-  if (!missing(iters_per_check) && !missing(n_batch)) {
-    stop("Specify only one of iters_per_check and n_batch")
-  } else if (!missing(iters_per_check)) {
+  # `iters_per_check` is how often the convergence checks run and is usually
+  # what a caller actually means; `n_batch` is how many checks the budget is cut
+  # into. They are two readings of one number, so supplying both is accepted as
+  # long as they agree. A contradiction is an error, and it names both
+  # values rather than refusing a consistent request.
+  if (!missing(iters_per_check)) {
     stopifnot(
-      "iterations should be multiple of iters_per_check" = iterations %% iters_per_check == 0
+      "iters_per_check must be a positive whole number" =
+        length(iters_per_check) == 1 && is.finite(iters_per_check) &&
+        iters_per_check >= 1 && iters_per_check == round(iters_per_check),
+      "iterations should be multiple of iters_per_check" =
+        iterations %% iters_per_check == 0
     )
-    n_batch <- iterations / iters_per_check
+    implied <- iterations / iters_per_check
+    if (!missing(n_batch) && n_batch != implied) {
+      stop("iters_per_check = ", iters_per_check, " and n_batch = ", n_batch,
+           " contradict each other: with iterations = ", iterations,
+           ", iters_per_check implies n_batch = ", implied,
+           ". Supply one, or two that agree.")
+    }
+    n_batch <- implied
+  } else {
+    stopifnot(
+      "iterations should be multiple of n_batch" = iterations %% n_batch == 0
+    )
+    iters_per_check <- iterations / n_batch
   }
 
   # resolve solver backend + factorization; send both to C++ and let it map
@@ -386,10 +461,24 @@ control_opt <- function(
     std_lim = std_lim,
     trend_lim = trend_lim,
     trend_rel_lim = trend_rel_lim,
-    trend_use_tstat = trend_use_tstat,
     use_std_check = use_std_check,
     n_conv_batch = n_conv_batch,
     warn_no_convergence = warn_no_convergence,
+    schedule_auto_start = schedule_auto_start,
+    schedule_min_scale = schedule_min_scale,
+    schedule_arm_z = schedule_arm_z,
+    stationarity_window = stationarity_window,
+    stationarity_eff = stationarity_eff,
+    polish_floor_frac = polish_floor_frac,
+    stationarity_ratio_lim = stationarity_ratio_lim,
+    stationarity_dir_lim = stationarity_dir_lim,
+    stationarity_min_checks = as.integer(stationarity_min_checks),
+    conv_criterion = match.arg(conv_criterion),
+    mc_se_conv_check = mc_se_conv_check,
+    mc_se_lim = mc_se_lim,
+    max_stepsize_decays = as.integer(max_stepsize_decays),
+    n_settle_checks = as.integer(n_settle_checks),
+    stepsize_decay_precision_gamma = stepsize_decay_precision_gamma,
     continue_chains = continue_chains,
     num_threads = c(
       max(n_parallel_chain, 1),
@@ -399,6 +488,8 @@ control_opt <- function(
     n_trace_iter = n_trace_iter,
     polish_iterations = polish_iterations,
     polish_stepsize_factor = polish_stepsize_factor,
+    polish_decay_alpha = polish_decay_alpha,
+    polish_decay_t0 = polish_decay_t0,
     selinv_max_fill = selinv_max_fill,
     trace_adapt = trace_adapt,
     trace_adapt_frac = trace_adapt_frac,
@@ -412,6 +503,8 @@ control_opt <- function(
 
     max_relative_step = max_relative_step,
     max_absolute_step = max_absolute_step,
+    step_clip_mode = match(step_clip, c("value", "norm", "adaptive")) - 1L,
+    step_clip_factor = step_clip_factor,
     trend_std_conv_check = trend_std_conv_check,
 
     # preconditioner related

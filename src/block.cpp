@@ -815,6 +815,30 @@ void BlockModel::sample_cond_noise_V(bool posterior) {
   }
 }
 
+// Draw W from its prior given V
+void BlockModel::sampleW_V() {
+  if (n_latent == 0)
+    return;
+  for (int li = 0; li < n_latent; ++li) {
+    const VectorXd mean_li = latents[li]->getMean();   // mu (V - h)
+    const VectorXd sv_li = latents[li]->getSV();       // sigma^2 V
+    VectorXd z = NoiseUtil::rnorm_vec(mean_li.size(), 0, 1, rng());
+    VectorXd rhs = mean_li + sv_li.cwiseSqrt().cwiseProduct(z);
+
+    const SparseMatrix<double, 0, int> &Kl = latents[li]->getK();
+    Eigen::SparseLU<SparseMatrix<double, 0, int>, Eigen::COLAMDOrdering<int>> lu;
+    lu.analyzePattern(Kl);
+    lu.factorize(Kl);
+    if (lu.info() != Eigen::Success)
+      Rcpp::stop("sampleW_V(): factorization of K failed");
+
+    latents[li]->setW(lu.solve(rhs));
+    // The prior analogue of E(W | Y, V) is E(W | V) = K^-1 mu (V - h);
+    // leaving cond_W at its stored posterior value would leak the fit.
+    latents[li]->set_cond_W(lu.solve(mean_li));
+  }
+}
+
 // posterior
 Rcpp::List BlockModel::sampling(int n, int n_burnin, bool posterior,
                                 const SparseMatrix<double> &A) {
@@ -825,7 +849,9 @@ Rcpp::List BlockModel::sampling(int n, int n_burnin, bool posterior,
   std::vector<VectorXd> mn_Vs;   // measurement nosie V
   rao_blackwell = true;
 
-  if (!all_gaussian)
+  // burn_in() runs posterior sweeps, so it is only meaningful when the
+  // draws that follow are posterior draws.
+  if (posterior && !all_gaussian)
     burn_in(n_burnin);
 
   for (int i = 0; i < n; i++) {
@@ -836,6 +862,7 @@ Rcpp::List BlockModel::sampling(int n, int n_burnin, bool posterior,
       sample_cond_noise_V(true);
     } else {
       sample_uncond_V();
+      sampleW_V();
       sample_cond_noise_V(false);
     }
 
@@ -1387,8 +1414,6 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
   if (do_precond) {
     if (precond_count > 0) {
       last_precond = (1.0 / precond_count) * precond_sum;
-      // Louis identity: observed info = complete info + grad covariance
-      // last_precond += grad_covariance;
       // last_precond is the Hessian; Ngme::precond() negates it into the
       // information. Subtract so the ridge actually increases the
       // information diagonal that llt() factorises.
@@ -1427,6 +1452,19 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
 void BlockModel::adapt_trace_probes() {
   if (!rao_blackwell || !trace_adapt || grad_run_n_ < 30)
     return;
+  // The denominator scales the probe budget so that the
+  // Hutchinson variance is trace_adapt_frac of the total per-iteration gradient
+  // variance, but for an all-Gaussian model with Rao-Blackwell there is a
+  // single pass using the conditional mean of W, so the probes are the ONLY
+  // randomness and the share being targeted is identically one. What keeps the
+  // budget finite is that var_tot is E[(g_t-g_{t-1})^2]/2, which is a variance
+  // only while the gradient's mean is constant and otherwise also contains the
+  // systematic drift of the gradient as the optimizer moves. So the rule really
+  // drives probe noise below a fraction of the squared per-iteration drift, and
+  // as a fit converges that drift goes to zero and the budget climbs to
+  // trace_adapt_max. Whether more probes are worth their cost depends on the
+  // operator, and for the tested cases, it seems like the probes are so cheap
+  // that it is worth it as it reduces the total number of iterations needed.
   if (--trace_adapt_countdown_ > 0)
     return;
   trace_adapt_countdown_ = trace_adapt_every;

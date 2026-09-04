@@ -113,9 +113,18 @@ cross_validation <- function(
     ngme <- lapply(ngme, rebuild_cv_model_with_data, data = data)
   }
 
-  if (is.list(transform)) {
+  # A named list of functions means scales: score the same draws on each, which
+  # is checked before the per-model case because both are lists of functions.
+  # `transform` never affects sampling.
+  if (is.list(transform) && !is.null(names(transform)) &&
+      all(nzchar(names(transform))) &&
+      all(vapply(transform, is.function, logical(1)))) {
+    transform <- rep(list(transform), length(ngme))
+  } else if (is.list(transform)) {
     if (length(transform) != length(ngme)) {
-      stop("If transform is a list, its length must equal number of models (length(ngme)).")
+      stop("If transform is an unnamed list it is one entry per model, so its ",
+           "length must equal length(ngme). For several SCALES, pass a NAMED ",
+           "list of functions instead.")
     }
     if (!all(vapply(transform, is.function, logical(1)))) {
       stop("All entries of `transform` must be functions.")
@@ -198,6 +207,8 @@ cross_validation <- function(
   pred_2 <- list()
   Y_1 <- list()
   Y_2 <- list()
+  Y_1 <- list()
+  Y_2 <- list()
 
   compute_err <- if (merge_replicates) compute_err_merged_reps else compute_err_reps
   cv_message <- function(...) {
@@ -239,6 +250,7 @@ cross_validation <- function(
                     train_idx[[i]],
                     N_sim = N_sim,
                     n_gibbs_samples = n_gibbs_samples,
+                    n_burnin = n_burnin,
                     seed = seed,
                     keep_pred = keep_pred,
                     parallel = TRUE,
@@ -293,6 +305,7 @@ cross_validation <- function(
               train_idx[[i]],
               N_sim = N_sim,
               n_gibbs_samples = n_gibbs_samples,
+              n_burnin = n_burnin,
               seed = seed,
               keep_pred = keep_pred,
               parallel = FALSE,
@@ -306,6 +319,12 @@ cross_validation <- function(
             )
             scores[[i]] <- result$scores
             sd_scores[[i]] <- result$sd_scores
+            if (keep_pred) {
+              pred_1[[i]] <- result$pred_1
+              pred_2[[i]] <- result$pred_2
+              Y_1[[i]] <- result$Y_1
+              Y_2[[i]] <- result$Y_2
+            }
 
             cv_message("In test batch ", i, ":")
             cv_message_table(scores[[i]])
@@ -776,6 +795,7 @@ compute_err_reps <- function(
       bool_test_idx = bool_test_idx,
       N_sim = N_sim,
       n_gibbs_samples = n_gibbs_samples,
+      n_burnin = n_burnin,
       seed = seed,
       keep_pred = keep_pred,
       parallel = parallel,
@@ -820,7 +840,8 @@ compute_err_reps <- function(
 # helper function to compute MSE, MAE, ... for each subset of target / data
 # assume test_idx and train_idx belongs to same replicate
 ##
-# A custom metric function can be supplied to combine group-wise observations and predictions into a single quantity before scoring.
+# A custom metric function can be supplied to combine group-wise observations and
+# predictions into a single quantity before scoring.
 compute_err_1rep <- function(
     ngme_1rep,
     bool_test_idx,
@@ -847,10 +868,6 @@ compute_err_1rep <- function(
   if (sum(bool_test_idx & bool_train_idx) > 0) {
     warning("Notice that test_idx and train_idx overlap!")
   }
-
-  # Since we revert the order of Y, now we need to
-  # revert the train and test idx to match
-  # NOT REALLY, I DID IT in the outside function!!!
 
   # Subset noise[test_idx, ] for test location
   y_data <- ngme_1rep$Y[bool_test_idx]
@@ -941,19 +958,31 @@ compute_err_1rep <- function(
 
   # Use the actual number of rows returned by scores instead of original group count
   # This handles the case where merge_groups=TRUE reduces 2 groups to 1 result
-  n_result_rows <- nrow(scores[[1]])
-  n_cols <- ncol(scores[[1]])
+  # Reduce N_sim score frames to mean/sd. Factored out so the multi-transform
+  # case reuses exactly the same reduction, once per scale.
+  .reduce_scores <- function(sc) {
+    a <- array(unlist(sc), dim = c(nrow(sc[[1]]), ncol(sc[[1]]), length(sc)))
+    m <- apply(a, c(1, 2), mean)
+    v <- apply(a, c(1, 2), sd)
+    colnames(m) <- colnames(v) <- names(sc[[1]])
+    rownames(m) <- rownames(v) <- rownames(sc[[1]])
+    list(mean_scores = m, sd_scores = v)
+  }
 
-  # compute mean and sd
-  array_3d <- array(unlist(scores),
-    dim = c(n_result_rows, n_cols, length(scores))
-  )
+  # With a list of transforms each element of `scores` is itself a named list
+  # (one frame per scale); regroup by scale, then reduce each.
+  if (is.list(scores[[1]]) && !is.data.frame(scores[[1]])) {
+    nms <- names(scores[[1]])
+    per <- lapply(nms, function(k) .reduce_scores(lapply(scores, `[[`, k)))
+    names(per) <- nms
+    return(list(mean_scores = lapply(per, `[[`, "mean_scores"),
+                sd_scores   = lapply(per, `[[`, "sd_scores"),
+                Y_1 = Y_1, Y_2 = Y_2, pred_1 = pred_1, pred_2 = pred_2))
+  }
 
-  mean_array <- apply(array_3d, c(1, 2), mean)
-  sd_array <- apply(array_3d, c(1, 2), sd)
-
-  colnames(mean_array) <- colnames(sd_array) <- names(scores[[1]])
-  rownames(mean_array) <- rownames(sd_array) <- rownames(scores[[1]])
+  red <- .reduce_scores(scores)
+  mean_array <- red$mean_scores
+  sd_array <- red$sd_scores
 
   # scores results and 2 predictions
   list(
@@ -1245,8 +1274,8 @@ compute_pred_N <- function(
 #' @param metric optional custom metric function used to combine group-wise values before scoring
 #' @param transform element-wise map applied to the observations and to every
 #'   posterior draw before scoring, so the scores are on the transformed scale.
-#'   Applied BEFORE `metric`: `transform` changes the SCALE of each value,
-#'   `metric` combines values ACROSS GROUPS, and the two compose in that order.
+#'   Applied before `metric`: `transform` changes the scale of each value,
+#'   `metric` combines values across groups, and the two compose in that order.
 compute_score_given_pred <- function(
     Y_N_1_thin, Y_N_2_thin,
     y_data, group_data,
@@ -1255,9 +1284,15 @@ compute_score_given_pred <- function(
     metric = NULL,
     transform = identity) {
   # Scale first, then aggregate. Scoring on a transformed scale means scoring
-  # transform(y) against transform(draw) for every draw -- not transforming a
-  # summary afterwards, which is a different (and wrong) quantity whenever the
-  # transform is non-linear: E[exp(X)] != exp(E[X]).
+  # transform(y) against transform(draw) for every draw.
+  # A list of transforms scores the same draws on several scales.
+  if (is.list(transform)) {
+    return(lapply(transform, function(tf)
+      compute_score_given_pred(Y_N_1_thin, Y_N_2_thin, y_data, group_data,
+                               merge_groups = merge_groups,
+                               merged_group_name = merged_group_name,
+                               metric = metric, transform = tf)))
+  }
   if (!identical(transform, identity)) {
     if (!is.function(transform)) stop("`transform` must be a function.")
     y_data <- transform(y_data)

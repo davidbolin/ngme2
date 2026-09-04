@@ -58,8 +58,25 @@ ngme_digest_max_diff <- function(a, b) {
   for (k in names(a)) {
     x <- a[[k]]; y <- b[[k]]
     if (length(x) != length(y)) return(Inf)
+    if (!is.numeric(x) || !is.numeric(y)) {
+      if (!identical(x, y)) return(Inf)
+      next
+    }
     d <- suppressWarnings(max(abs(x - y)))
-    if (!is.finite(d)) d <- if (identical(x, y)) 0 else Inf
+    if (!is.finite(d)) {
+      # A digest entry may legitimately hold non-finite values -- an uncomputed
+      # diagnostic is NA, and some mesh graph entries are Inf. Comparing such an
+      # entry with identical() is all-or-nothing, so a VECTOR holding NAs
+      # alongside ordinary numbers that differ in the last bits was written off
+      # as incomparable and reported as Inf, which is not a disagreement between
+      # the two fits at all. Require the non-finite values to sit in the same
+      # places and be the same kind (identical() separates NA, NaN and Inf),
+      # then compare the finite entries numerically.
+      fx <- is.finite(x); fy <- is.finite(y)
+      if (!identical(fx, fy)) return(Inf)
+      if (!identical(x[!fx], y[!fy])) return(Inf)
+      d <- if (any(fx)) max(abs(x[fx] - y[fx])) else 0
+    }
     worst <- max(worst, d)
   }
   worst

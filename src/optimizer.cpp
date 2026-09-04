@@ -14,6 +14,18 @@ Ngme_optimizer::Ngme_optimizer(const Rcpp::List &control_opt,
                                unsigned long seed)
     : model(ngme), verbose(control_opt["verbose"]),
       numerical_eps(control_opt["numerical_eps"]), curr_iter(0),
+      schedule_min_scale(
+          control_opt.containsElementNamed("schedule_min_scale")
+              ? Rcpp::as<double>(control_opt["schedule_min_scale"])
+              : 0.0),
+      step_clip_mode(
+          control_opt.containsElementNamed("step_clip_mode")
+              ? Rcpp::as<int>(control_opt["step_clip_mode"])
+              : 2),
+      step_clip_factor(
+          control_opt.containsElementNamed("step_clip_factor")
+              ? Rcpp::as<double>(control_opt["step_clip_factor"])
+              : 5.0),
 
       method(Rcpp::as<std::string>(control_opt["sgd_method"])),
       m(VectorXd::Zero(ngme->get_n_params())),
@@ -247,9 +259,17 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
       } else {
         double local_iter =
             (curr_iter - stepsize_schedule_burnin_iter) + 1.0;
+        // NORMALISED so the scale is exactly 1 at the moment the schedule
+        // starts. The unnormalised form pow(local_iter + t0, -alpha) is 0.063
+        // at its very first step for t0 = 100, alpha = 0.6. In this form t0 is
+        // the timescale over which decay actually happens.
         stepsize_schedule_scale =
-            std::pow(local_iter + stepsize_schedule_t0,
+            std::pow(1.0 + local_iter / stepsize_schedule_t0,
                      -stepsize_schedule_alpha);
+        // FLOOR. An unbounded decay does not trade noise for precision, it
+        // switches the optimiser off.
+        if (stepsize_schedule_scale < schedule_min_scale)
+          stepsize_schedule_scale = schedule_min_scale;
       }
       one_step *= stepsize_schedule_scale;
       effective_stepsizes *= stepsize_schedule_scale;
@@ -270,22 +290,40 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
       return x;
     }
 
-    // std::cout << "get gradient (ms): " << since(timer_grad).count() <<
-    // std::endl; restrict one_step by |one_step(i)| / |x(i)| < rela_step
-    VectorXd rela_max_step = max_relative_step * x.cwiseAbs();
-    for (int j = 0; j < one_step.size(); j++) {
-      double sign = one_step(j) > 0 ? 1.0 : -1.0;
-
-      // // take limit on relative step
-      // if (abs(x(j)) > 1 && abs(one_step(j)) > rela_max_step(j)) {
-      //     one_step(j) = sign * rela_max_step(j);
-      // }
-
-      // take limit on absolute step
-      if (abs(one_step(j)) > max_absolute_step) {
-        one_step(j) = sign * max_absolute_step;
+    // ---- STEP LIMITING ------------------------------------------------------
+    //   "value"     historical: clip each component. Rotates the direction.
+    //   "norm"      rescale the whole vector if its length exceeds
+    //               max_absolute_step * sqrt(p) -- the length of a step sitting
+    //               at the component limit in every coordinate, so it binds in
+    //               the same place but preserves the direction.
+    //   "adaptive"  (default) rescale only steps that are far out of line with
+    //               the recent typical step length. Blow-ups are orders of
+    //               magnitude out and are caught; a step that is merely bigger
+    //               than usual, because the method accumulates one, is not.
+    //               A "norm" backstop still applies, so the scale cannot drift
+    //               up without bound.
+    const double p_dim = (double)one_step.size();
+    const double norm_cap = max_absolute_step * std::sqrt(p_dim);
+    if (step_clip_mode == 0) {
+      for (int j = 0; j < one_step.size(); j++) {
+        double sign = one_step(j) > 0 ? 1.0 : -1.0;
+        if (std::abs(one_step(j)) > max_absolute_step)
+          one_step(j) = sign * max_absolute_step;
       }
+    } else {
+      double nrm = one_step.norm();
+      double lim = norm_cap;
+      if (step_clip_mode == 2) {
+        if (!(step_scale > 0))
+          step_scale = nrm; // first step sets the reference
+        lim = std::min(norm_cap, step_clip_factor * step_scale);
+      }
+      if (nrm > lim && lim > 0)
+        one_step *= (lim / nrm);
+      if (step_clip_mode == 2)
+        step_scale = 0.95 * step_scale + 0.05 * one_step.norm();
     }
+    (void)max_relative_step;
 
     // variance reduction (not enabled)
     int r = curr_iter - var_reduce_iter;

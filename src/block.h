@@ -201,6 +201,8 @@ public:
 
   int get_n_obs() const { return n_obs; }
   void sampleW_VY(bool burn_in = false);
+  // Draw W from its prior given V (no conditioning on Y).
+  void sampleW_V();
 
   bool is_all_gaussian() const { return all_gaussian; }
 

@@ -1,5 +1,59 @@
 # ngme2 (development version)
 
+* Remove `moving_window` from `ngme()`. It was declared and documented ("return
+  the average estimation of last .. iterations") but never read anywhere in the
+  function, so it silently did nothing. 
+* `spacetime()` gains `cc_variance_free`, DEFAULT TRUE. The operator now puts
+  the whole `cc` factor on the temporal term (`K = cc*BtCs + Ls`) instead of
+  splitting it `sqrt(cc)` between the temporal and spatial terms. This makes the
+  variance less dependent on `cc` and typically improves mixing. 
+* `cross_validation()` accepts a NAMED list of `transform`s and scores the same
+  posterior draws on each scale. `transform` is applied after the draws exist
+  and never affects sampling, so calling once per scale re-drew identical
+  samples and doubled the cost of a cross-validation. Verified to reproduce the
+  two-call scores to 10 significant figures. An unnamed list keeps its previous
+  meaning of one entry per model.
+* Fix `n_burnin` being silently dropped in `cross_validation()`. 
+* Live diagnostics (`[iter ...]`, `[stationarity]`, `[polish]`) now go to
+  stderr via `REprintf` rather than stdout. 
+* The polish phase's geometric decay now starts from the step size the search
+  was using. `polish_stepsize_factor` defaults to 1.0.
+* Trajectory continuation now requires the same model.
+* Parallelise the gradient computation over replicates. 
+* Fix the advection term of the non-separable `spacetime()` model, which was
+  quadratic in the advection field and simply wrong. This changes fitted results 
+  for every non-separable model with free advection.
+* Fix `spacetime()` assembling a different operator in C++ than in R. 
+* `spacetime()` now computes its operator traces from the diagonal blocks,
+  needing neither Hutchinson probes nor a factorization of the full
+  `(nt*ns) x (nt*ns)` operator. 
+* The `spacetime()` operator now starts from its approximatestationary distribution 
+  instead of in zero. `spacetime(stationary_init = FALSE)` restores the old first block for
+  reproducing earlier fits.
+* Convergence is now decided in two phases, which separates two questions the
+  old rule ran together. `control_opt(conv_criterion = )` selects between them
+  and defaults to the new `"stationarity"`.
+  - The SEARCH phase stops as soon as the chains have settles: a Geweke
+    split-half comparison of the running mean, per parameter, computed on the
+    second half of the history so the burn-in transient leaves the comparison
+    window as the run proceeds.
+  - The POLISH phase then reduces the step size geometrically and averages the 
+    iterates (Polyak-Ruppert, which was already what the reported estimate is) 
+    and runs until that average is precise. it stops when the Monte Carlo error
+    of the estimate falls below `mc_se_lim * se_stat`, i.e. when the Monte Carlo
+    error is a fraction of the statistical error the data can support.
+* Very short runs now report non-convergence rather than claiming it. The
+  stationarity test needs enough sub-batch history to split into two halves, so
+  a fit given only a few dozen iterations warns instead of declaring success. 
+* The stationarity test's comparison window is derived from the measured
+  correlation length of the chains rather than being a fixed count
+  (`control_opt(stationarity_window = 0, stationarity_eff = )`). tau is
+  estimated as the ratio of the batch-means variance to the naive variance of
+  the same mean and the window is `2 * stationarity_eff * tau`. 
+* The optional trend-triggered step-size decay
+  (`stepsize_decay(method = "on_trend")`) used the same |t| <= `trend_lim` test
+  to decide the chains had stopped moving, and so would decay soonest when the
+  window was noisiest. It now uses the drift rate as well.
 * `ngme(start = previous_fit)` is now a true continuation. `start_sd` is no
   longer applied on a warm start at all. On top of that, each chain resumes
   from its own final parameters instead of from the chain-averaged fit. 
@@ -8,9 +62,19 @@
   concatenated across the restarts rather than replaced, so `traceplot()` and any 
   convergence diagnostic see the whole path.
   Each chain's own latent state (`W`, and the mixing variables `V`) is carried
-  over too: `start` holds the chain AVERAGE of those, and an average of
-  posterior draws is not a draw.
+  over too: `start` holds the chain average of those.
   `control_opt(continue_chains = FALSE)` restores the previous behaviour.
+* Convergence gained a third clause: the estimate must be precise, not merely
+  stationary. R-hat and the trend test say the chains reached the same stationary
+  distribution and stopped drifting; neither says the answer is pinned down, because
+  constant-step SGD settles into a distribution whose width is set by the step size
+  rather than by the data. `control_opt(mc_se_conv_check = , mc_se_lim = )` requires the
+  Monte Carlo error of the reported estimate to be at most `mc_se_lim` (default 0.5) of
+  `se_stat = sqrt(diag(P^-1))`, the standard error the data supports, read from the
+  preconditioner.
+* Measurement-noise parameter names are prefixed `meas_`. A latent noise and the
+  measurement noise both have `mu`/`sigma`/`nu`, so `par_names` could contain `sigma_1`
+  twice and anything keyed by name silently merged two unrelated parameters.
 * R-hat is now computed over the same window as the trend test (sub-batch means
   spanning the second half of the run) instead of over the current batch alone, and
   `n_conv_batch` defaults to 2 rather than 1. 
@@ -21,17 +85,12 @@
   not a movement per regression window.
 * The trend window is now built from sub-batch means spread evenly over the second half
   of the run so far, instead of the last `n_slope_check` whole checkpoints. It is
-  therefore available at the FIRST checkpoint rather than the `n_slope_check`-th. 
+  therefore available at the first checkpoint rather than the `n_slope_check`-th. 
   `n_min_batch` now defaults to 1 rather than `min(n_batch, 3)`, since it is no 
   longer what holds a converged fit back.
 * With `verbose = TRUE` and `print_check_info = FALSE`, each convergence checkpoint now
-  prints a one-line progress summary -- how many parameters have converged, and the worst
-  R-hat, t-statistic and drift rate with the parameter responsible. A full table at every
-  checkpoint is unreadable when checkpoints are 50 iterations apart, but a run that may go
-  to 10,000 iterations still has to say how close it is; the drift rate falling towards
-  `trend_rel_lim` is the quantity to watch.
-* The post-convergence polish phase now runs ONLY when the stopping rule
-  actually fired.
+  prints a progress summary: how many parameters have converged, and the worst
+  R-hat, t-statistic and drift rate with the parameter responsible. 
 * `predict()` gained a `replicate` argument. Every prediction previously came
   from the first replicate whatever the caller asked for, since the latent field
   `W` is per-replicate. The argument takes a replicate level (the name used in
@@ -53,7 +112,6 @@
   preconditioner became the analytic second-order Hessian, so `control_opt()`
   overwrote its own default with `NULL` and passed `precond_strategy =
   numeric(0)` to C++ -- which never read it. `numerical_eps` is unaffected.
-
 * The default `nu` prior for stationary NIG latent noise is now the penalised-complexity
   prior of Cabral, Bolin and Rue (2023) calibrated as in their Section 3.3, from
   `P(1/nu > U) = alpha` with `U = 2.5` and `alpha = 0.01`, i.e. `P(nu < 0.4) = 0.01`.
@@ -75,32 +133,22 @@
   families were unaffected, since there `V` is fixed.
 * The Rao-Blackwell traces are taken from an exact selected (Takahashi) inverse when the
   Cholesky factor of `QQ` is cheap enough, and from Hutchinson probes otherwise, controlled
-  by `control_opt(selinv_max_fill = )`. Triangular operators (`ar1`, `ou`, `arma`) and 1-d
-  meshes qualify; a 2-d mesh does not. For those models the traces are now exact and the fit
+  by `control_opt(selinv_max_fill = )`. Triangular operators (`ar1`, `ou`, `arma`) and 1d
+  meshes qualify; a 2d mesh does not. For those models the traces are now exact and the fit
   no longer depends on `n_trace_iter` at all.
 * The Hutchinson probe count adapts during the run (`control_opt(trace_adapt = )`) so that
   the trace estimator contributes a target share of the gradient variance instead of being
   fixed a priori. 
 * The convergence trend test is now scale-free: it compares the fitted slope to its own
   standard error rather than to an absolute bound, so `trend_lim` is a t-value (default 2)
-  and no longer depends on the parameter's units or on `n_batch`. The old absolute test never
-  passed on any model tried; `trend_use_tstat = FALSE` restores it. The relative-standard-
-  deviation part is off by default (`use_std_check`), as it conflates chain disagreement with
-  parameter imprecision.
+  and no longer depends on the parameter's units or on `n_batch`. 
 * A run that exhausts its iteration budget without converging now warns and names the
   parameters still failing, instead of returning silently. Set
   `control_opt(warn_no_convergence = FALSE)` for short runs where convergence is not expected.
-* New post-convergence polish phase (`control_opt(polish_iterations = )`, default 50, capped
-  at the number of iterations the fit ran). Once the stopping rule fires the step size is
-  scaled by `polish_stepsize_factor` and the reported estimate becomes the average of the
-  iterates over that window (Polyak-Ruppert), which cut the estimator's standard deviation by
-  about a fifth in testing. Set to 0 for the previous last-batch average.
 * Removed the Pflug convergence diagnostic (`pflug_conv_check`, `pflug_alpha`). It could
   never fire: the rule looks for sign changes in the running sum of `<g_t, g_{t-1}>`, but the
   gradient is evaluated on a Gibbs sample of the latent field, so consecutive gradients stay
-  positively correlated however close the optimum is. Its intent -- detect that systematic
-  progress has stopped -- is served by the slope t-statistic, which asks the same question of
-  the parameter trajectory.
+  positively correlated however close the optimum is. 
 * `src/Makevars` now tracks header dependencies, so editing a header rebuilds every object
   that includes it. Previously only each source file was compared against its own object,
   which could leave objects compiled against two different layouts of the same class.
@@ -125,11 +173,10 @@
   assembly of `K` rather than once per time node: with the default `B_gamma_x` /
   `B_gamma_y` the advection field is the same at every time node, so all `nt - 1`
   blocks are the same matrix. The Rao-Blackwell traces no longer assemble the
-  matrix they trace either -- `tr(QQ^-1 A' diag(d) B)` is now taken as
+  matrix they trace either: `tr(QQ^-1 A' diag(d) B)` is now taken as
   `A' (d * (B QU))` on the probe block instead of forming the triple product,
   which is as dense as `QQ` and was built once per parameter per iteration.
-  Both change results only by round-off; `NGME2_NO_FACTORED_TRACE` restores the
-  assembled trace for comparison.
+  `NGME2_NO_FACTORED_TRACE` restores the assembled trace for comparison.
 * Increased the burnin for the Gibbs chain for the posterior samples of `W` and `V` 
   that `ngme()` returns from 1 to 100, and before a posterior `simulate()` draw. 
 * Default random seeds are now drawn from the ambient R random number stream

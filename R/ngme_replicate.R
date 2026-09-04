@@ -60,7 +60,9 @@ ngme_replicate <- function(
       paste0("rho_", seq_along(noise$rho))
     }
 
-    c(mu_params, sigma_params, nu_params, rho_params)
+    # The measurement noise and a latent noise both carry parameters called
+    # mu/sigma/nu, so an unprefixed name collides.
+    paste0("meas_", c(mu_params, sigma_params, nu_params, rho_params))
   }
   par_names <- c(par_names, merr_names)
 

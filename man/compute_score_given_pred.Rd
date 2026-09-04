@@ -33,8 +33,8 @@ combine them into a vector-valued score}
 
 \item{transform}{element-wise map applied to the observations and to every
 posterior draw before scoring, so the scores are on the transformed scale.
-Applied BEFORE `metric`: `transform` changes the SCALE of each value,
-`metric` combines values ACROSS GROUPS, and the two compose in that order.}
+Applied before `metric`: `transform` changes the scale of each value,
+`metric` combines values across groups, and the two compose in that order.}
 }
 \description{
 Compute the scores given the prediction

@@ -1929,6 +1929,23 @@ int get_openmp_threads() {
 #endif
 }
 
+// Cap OpenMP for code paths that never go through estimate(). Fitting sets the
+// thread count from control_opt$num_threads, but sampling_cpp() -- used by
+// cross_validation() and predict() -- does not, so a session that only scores a
+// fitted model inherits the OpenMP default of one thread per core. Several such
+// R processes on one machine then oversubscribe badly: the threads busy-wait at
+// barriers, and wall time collapses while CPU% stays high.
+// [[Rcpp::export]]
+int set_openmp_threads(int n) {
+#ifdef _OPENMP
+  if (n >= 1) omp_set_num_threads(n);
+  return omp_get_max_threads();
+#else
+  (void)n;
+  return 0;
+#endif
+}
+
 // [[Rcpp::export]]
 bool has_pardiso() {
 #ifdef USEMKL

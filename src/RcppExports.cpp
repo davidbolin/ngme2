@@ -48,6 +48,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// set_openmp_threads
+int set_openmp_threads(int n);
+RcppExport SEXP _ngme2_set_openmp_threads(SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(set_openmp_threads(n));
+    return rcpp_result_gen;
+END_RCPP
+}
 // has_pardiso
 bool has_pardiso();
 RcppExport SEXP _ngme2_has_pardiso() {
@@ -99,6 +110,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ngme2_estimate_cpp", (DL_FUNC) &_ngme2_estimate_cpp, 2},
     {"_ngme2_sampling_cpp", (DL_FUNC) &_ngme2_sampling_cpp, 5},
     {"_ngme2_get_openmp_threads", (DL_FUNC) &_ngme2_get_openmp_threads, 0},
+    {"_ngme2_set_openmp_threads", (DL_FUNC) &_ngme2_set_openmp_threads, 1},
     {"_ngme2_has_pardiso", (DL_FUNC) &_ngme2_has_pardiso, 0},
     {"_ngme2_ngme_factor_counters", (DL_FUNC) &_ngme2_ngme_factor_counters, 1},
     {"_ngme2_compute_log_like_cpp", (DL_FUNC) &_ngme2_compute_log_like_cpp, 1},

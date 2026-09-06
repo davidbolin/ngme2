@@ -35,6 +35,10 @@
 #' @param test_idx a list of indices of the data (which data points to be predicted) (only for custom type)
 #' @param train_idx  a list of indices of the data (which data points to be used for re-sampling (not re-estimation)) (only for custom type)
 #' @param keep_pred logical, keep test information (pred_1, pred_2) in the return (as attributes), pred_1 and pred_2 are the prediction of the two chains
+#' @param max_num_threads cap on OpenMP threads for the scoring passes. Fitting
+#'   sets this from \code{control_opt}, but scoring does not, so a session that only
+#'   cross-validates inherits one thread per core; several concurrent runs then
+#'   oversubscribe. \code{NULL} (default) leaves the current setting untouched.
 #' @param thining_gap integer, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50\% of the samples for CRPS, sCRPS, etc.
 #' @param parallel logical, run in parallel mode
 #' @param cores_layer1 integer, number of cores for the first layer (over testing samples)
@@ -76,6 +80,7 @@ cross_validation <- function(
     keep_pred = FALSE,
     parallel = FALSE,
     thining_gap = 1, # Used for computing CRPS, sCRPS, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50% of the samples for CRPS, sCRPS, etc.
+    max_num_threads = NULL,
     # merge_replicates = FALSE, # remove this option
     cores_layer1 = if (parallel) min(parallel::detectCores(), 2) else 1, # Limit to 2 cores for safety
     cores_layer2 = if (parallel) min(parallel::detectCores(), 2) else 1, # Limit to 2 cores for safety
@@ -116,6 +121,15 @@ cross_validation <- function(
   # A named list of functions means scales: score the same draws on each, which
   # is checked before the per-model case because both are lists of functions.
   # `transform` never affects sampling.
+  # Scoring never goes through estimate(), which is where fitting sets the
+  # OpenMP thread count, so without this a scoring session inherits one thread
+  # per core. Several concurrent CV runs then oversubscribe and busy-wait.
+  if (!is.null(max_num_threads)) {
+    stopifnot(is.numeric(max_num_threads), length(max_num_threads) == 1,
+              max_num_threads >= 1)
+    set_openmp_threads(as.integer(max_num_threads))
+  }
+
   if (is.list(transform) && !is.null(names(transform)) &&
       all(nzchar(names(transform))) &&
       all(vapply(transform, is.function, logical(1)))) {

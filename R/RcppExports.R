@@ -13,6 +13,10 @@ get_openmp_threads <- function() {
     .Call(`_ngme2_get_openmp_threads`)
 }
 
+set_openmp_threads <- function(n) {
+    .Call(`_ngme2_set_openmp_threads`, n)
+}
+
 has_pardiso <- function() {
     .Call(`_ngme2_has_pardiso`)
 }

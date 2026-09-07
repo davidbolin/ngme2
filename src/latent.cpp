@@ -497,9 +497,17 @@ void Latent::sample_uncond_V() {
   prevV = V;
   int n = V_size / n_noise;
 
-  // same logic as in simulation.R
+  // same logic as in simulation.R.
+  // NOTE the "normal" guards below. update_each_iter() skips Gaussian noise when
+  // filling p_vec/a_vec/b_vec, so for a Gaussian latent those are never
+  // initialised and feeding them to rGIG_cpp() yields NaN (and in the single_V
+  // branch `v` would be read uninitialised). V is constructed as h, which IS the
+  // Gaussian value, so the correct action is to leave it alone -- exactly what
+  // sample_cond_V() already does.
   if (single_V) {
     for (int i = 0; i < n_noise; i++) {
+      if (noise_type[i] == "normal")
+        continue;
       double v;
       if (noise_type[i] == "nig" || noise_type[i] == "normal_nig")
         v = rGIG_cpp(-0.5, nu[i], nu[i], latent_rng());
@@ -511,6 +519,8 @@ void Latent::sample_uncond_V() {
     }
   } else {
     for (int i = 0; i < n_noise; i++) {
+      if (noise_type[i] == "normal")
+        continue;
       // sample unconditional V
       V.segment(i * n, n) =
           rGIG_cpp(p_vec.segment(i * n, n), a_vec.segment(i * n, n),

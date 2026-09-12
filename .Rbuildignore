@@ -14,3 +14,11 @@
 ^LICENSE\.md$
 ^tests/archive$
 ^tmp_files$
+^\.positai$
+^build-pkgdown\.sh$
+^examples$
+^Rplots\.pdf$
+^\.Rhistory$
+
+# Placeholders that only exist to keep empty fixture directories in git.
+\.gitkeep$

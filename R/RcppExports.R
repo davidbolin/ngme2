@@ -17,6 +17,10 @@ set_openmp_threads <- function(n) {
     .Call(`_ngme2_set_openmp_threads`, n)
 }
 
+factorization_timing <- function(reset = FALSE) {
+    .Call(`_ngme2_factorization_timing`, reset)
+}
+
 has_pardiso <- function() {
     .Call(`_ngme2_has_pardiso`)
 }

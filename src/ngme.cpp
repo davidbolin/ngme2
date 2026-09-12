@@ -1,5 +1,6 @@
 // implement the Ngme class and rand effect class
 #include "ngme.h"
+#include "include/phase_timing.h"
 
 #include "include/thread_io.h"
 #include <atomic>
@@ -175,6 +176,7 @@ VectorXd Ngme::get_parameter() {
 }
 
 void Ngme::set_parameter_and_update(const VectorXd &p, bool with_precond) {
+  ngme_timing::Scope _sp(ngme_timing::set_param_us());
   current_param_ = p;
   if (sampling_strategy == Strategy::ws) {
     std::fill(repl_dirty_.begin(), repl_dirty_.end(),

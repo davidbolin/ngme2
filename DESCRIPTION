@@ -92,4 +92,4 @@ Depends:
     R (>= 3.5.0)
 BugReports: https://github.com/davidbolin/ngme2/issues
 Copyright: The R package and code, and the main programs, were written by and are Copyright by David Bolin, Xiaotian Jin, Alexandre Simas, and Jonas Wallin, and are redistributable under the GNU Public License, version 3 or later. The package also includes bundled SuiteSparse components. For details see inst/COPYRIGHTS.
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0

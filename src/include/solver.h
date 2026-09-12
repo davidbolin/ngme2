@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <iostream>
 #include <memory>
+#include <utility>
 #include <stdexcept>
 #include <string.h>
 
@@ -556,6 +557,14 @@ public:
   double trace2(const Eigen::SparseMatrix<double, 0, int> &A,
                 const Eigen::SparseMatrix<double, 0, int> &B,
                 unsigned int seed = 0);
+  // trace2 split in two. S = K^-1 A K^-1 U depends only on A, but the H_K block
+  // wants tr(K^-1 dK_k K^-1 dK_j) over PAIRS, so doing the solve inside
+  // trace2() repeats it n_theta_K(n_theta_K+1)/2 times where n_theta_K would
+  // do. Identical arithmetic, with the invariant hoisted.
+  Eigen::MatrixXd trace2_lhs(const Eigen::SparseMatrix<double, 0, int> &A,
+                             unsigned int seed = 0);
+  double trace2_reduce(const Eigen::SparseMatrix<double, 0, int> &B,
+                       const Eigen::MatrixXd &S) const;
   double trace(const Eigen::SparseMatrix<double, 0, int> &,
                unsigned int seed = 0);
   // tr(Q^-1 A^T diag(d) B) without ever forming A^T diag(d) B. The estimator
@@ -563,6 +572,15 @@ public:
   // (A^T diag(d) B) QU = A^T (d .* (B QU)) is three sparse-times-dense products
   // on an n x N_iter block instead of a sparse-sparse-sparse product whose
   // result is as dense as Q itself.
+  // trace_factored split so the B QU product can be shared. Both RB trace loops
+  // pass the SAME B (= K), so recomputing B*QU inside every call repeats a
+  // sparse-times-dense product once per parameter for no reason. d still varies
+  // per parameter, but scaling the shared block by it is elementwise.
+  Eigen::MatrixXd trace_factored_rhs(const Eigen::SparseMatrix<double, 0, int> &B,
+                                     unsigned int seed = 0);
+  double trace_factored_with(const Eigen::SparseMatrix<double, 0, int> &A,
+                             const Eigen::VectorXd &d,
+                             const Eigen::MatrixXd &BQU);
   double trace_factored(const Eigen::SparseMatrix<double, 0, int> &A,
                         const Eigen::VectorXd &d,
                         const Eigen::SparseMatrix<double, 0, int> &B,

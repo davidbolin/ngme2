@@ -1,4 +1,5 @@
 #include "latent.h"
+#include <cstdlib>
 #include "include/thread_io.h"
 #include "prior.h"
 #include <algorithm>
@@ -185,6 +186,9 @@ Latent::Latent(const Rcpp::List &model_list, unsigned long seed)
   int solver_type = Rcpp::as<int>(model_list["solver_type"]);
   n_trace_iter_ = n_trace_iter;
   solver_type_ = solver_type;
+  selinv_max_fill_ = model_list.containsElementNamed("selinv_max_fill")
+                         ? Rcpp::as<double>(model_list["selinv_max_fill"])
+                         : 4.0;
   nonsym_solver_ = model_list.containsElementNamed("nonsym_solver")
                        ? Rcpp::as<int>(model_list["nonsym_solver"])
                        : 0;
@@ -320,7 +324,7 @@ void Latent::compute_grad_and_hessian(bool rao_blackwell, bool with_precond) {
     auto t_start = std::chrono::steady_clock::now();
 
     // Build analytic Hessian blocks (state already contains necessary
-    // derivatives)
+    // derivatives).
     compute_hessian_blocks(false);
 
     MatrixXd precond_full = MatrixXd::Zero(n_params, n_params);
@@ -760,6 +764,7 @@ void Latent::update_each_iter(bool need_precond) {
   uopts.robust_reanalyze = robust_;
   uopts.n_trace_iter = n_trace_iter_;
   uopts.solver_type = solver_type_;
+  uopts.selinv_max_fill = selinv_max_fill_;
   uopts.nonsym_solver = nonsym_solver_;
   uopts.fix_mask_thetaK = ope->get_fix_mask_K();
   // Fresh probes each iteration.
@@ -915,6 +920,15 @@ MatrixXd Latent::nig_std_jacobian() const {
 
 void Latent::compute_hessian_blocks(bool rao_blackwell) {
   (void)rao_blackwell;
+  // The Hessian is evaluated at the DRAWN W, not at cond_W = E[W|Y], even
+  // though the gradient uses cond_W. That asymmetry is deliberate: H_K below
+  // is QUADRATIC in W, so E[H(W)|Y] != H(E[W|Y]). The gap is
+  //     tr(dK_k^T D^-1 dK_j Cov(W|Y)) + tr(K^T D^-1 d2K_jk Cov(W|Y)),
+  // and where the GRADIENT pays for the matching correction explicitly (see
+  // compute_rb_trace, which adds tr(QQ^-1 dK_j^T D^-1 K)), the Hessian has no
+  // such term. Evaluating at a draw is therefore unbiased for E[H|Y] while
+  // substituting the mean is not.
+  const VectorXd &HW = W;
   // Initialize blocks
   if (n_theta_K > 0) {
     hess_cache.H_K = MatrixXd::Zero(n_theta_K, n_theta_K);
@@ -942,20 +956,21 @@ void Latent::compute_hessian_blocks(bool rao_blackwell) {
   VectorXd Dinv =
       (sigma.array().square().matrix().cwiseProduct(V)).cwiseInverse();
   VectorXd m = mu.cwiseProduct(V - h);
-  VectorXd r = getK() * W - m;
+  VectorXd r = getK() * HW - m;
+
+  std::vector<VectorXd> KjW(n_theta_K > 0 ? n_theta_K : 0);
+  for (int j = 0; j < n_theta_K; ++j)
+    KjW[j] = get_dK(j) * HW;
 
   // H_K: W|V contribution exact; add operator-side trace terms later; Y|W
   // handled in Block
   if (n_theta_K > 0) {
-    std::vector<VectorXd> KjW(n_theta_K);
-    for (int j = 0; j < n_theta_K; ++j)
-      KjW[j] = get_dK(j) * W;
     for (int j = 0; j < n_theta_K; ++j) {
       for (int k = j; k < n_theta_K; ++k) {
         double term_vec = -KjW[k].cwiseProduct(Dinv).dot(KjW[j]);
         const auto &Kjk = ope->get_d2K(j, k);
         if (Kjk.rows() > 0) {
-          VectorXd KjkW = Kjk * W;
+          VectorXd KjkW = Kjk * HW;
           term_vec += -r.cwiseProduct(Dinv).dot(KjkW);
         }
         hess_cache.H_K(j, k) = term_vec;
@@ -975,13 +990,11 @@ void Latent::compute_hessian_blocks(bool rao_blackwell) {
   // H_K_mu cross block from W|V: B^T diag(V-h) D K_j W (per j)
   if (n_theta_K > 0 && n_theta_mu > 0) {
     hess_cache.H_K_mu.setZero(n_theta_K, n_theta_mu);
-    VectorXd Dinv =
-        (sigma.array().square().matrix().cwiseProduct(V)).cwiseInverse();
+    // Dinv was recomputed here, shadowing the identical one above.
     VectorXd diagVH =
         (V - h).cwiseProduct(Dinv); // elementwise (V-h)/(sigma^2 V)
     for (int j = 0; j < n_theta_K; ++j) {
-      VectorXd KjW = get_dK(j) * W;          // n x 1
-      VectorXd z = diagVH.cwiseProduct(KjW); // n x 1
+      VectorXd z = diagVH.cwiseProduct(KjW[j]); // n x 1
       VectorXd row = B_mu.transpose() * z;   // n_theta_mu x 1
       hess_cache.H_K_mu.row(j) = row.transpose();
     }
@@ -991,8 +1004,7 @@ void Latent::compute_hessian_blocks(bool rao_blackwell) {
   if (n_theta_K > 0 && n_theta_sigma > 0) {
     hess_cache.H_K_sigma.setZero(n_theta_K, n_theta_sigma);
     for (int j = 0; j < n_theta_K; ++j) {
-      VectorXd KjW = get_dK(j) * W;                        // n x 1
-      VectorXd z = r.cwiseProduct(Dinv).cwiseProduct(KjW); // n x 1
+      VectorXd z = r.cwiseProduct(Dinv).cwiseProduct(KjW[j]); // n x 1
       VectorXd row = 2.0 * B_sigma.transpose() * z;        // n_theta_sigma x 1
       hess_cache.H_K_sigma.row(j) = row.transpose();
     }

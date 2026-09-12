@@ -1,4 +1,8 @@
 #include "operator.h"
+#include <sstream>
+#include "include/phase_timing.h"
+#include <cstdio>
+#include <cstdlib>
 #include "include/factor_counters.h"
 #include <algorithm>
 #include <cmath>
@@ -140,10 +144,52 @@ bool Operator::try_triangular_traces(const UpdateOptions &opts, bool want_trace,
   return true;
 }
 
+namespace {
+// Same sparsity pattern? Two builds of one operator at perturbed theta differ
+// only in their values, so this is true on every iteration after the first.
+template <class M> bool same_pattern(const M &a, const M &b) {
+  if (a.rows() != b.rows() || a.cols() != b.cols() ||
+      a.nonZeros() != b.nonZeros() || !a.isCompressed() || !b.isCompressed())
+    return false;
+  return std::equal(a.outerIndexPtr(), a.outerIndexPtr() + a.outerSize() + 1,
+                    b.outerIndexPtr()) &&
+         std::equal(a.innerIndexPtr(), a.innerIndexPtr() + a.nonZeros(),
+                    b.innerIndexPtr());
+}
+
+// out = (x - y) * s, reusing out's storage when all three already share one
+// pattern. Eigen's sparse subtract merges patterns and allocates a fresh matrix
+// every call; here the operands are the same operator at perturbed parameters,
+// so the pattern never moves and a single pass over the values suffices. This
+// sits inside the differencing loop, which is the dominant cost for an operator
+// without analytic derivatives.
+template <class M>
+void diff_into(M &out, const M &x, const M &y, double s) {
+  if (same_pattern(x, y) && same_pattern(out, x)) {
+    const double *xv = x.valuePtr(), *yv = y.valuePtr();
+    double *ov = out.valuePtr();
+    const Eigen::Index nnz = x.nonZeros();
+    for (Eigen::Index i = 0; i < nnz; ++i)
+      ov[i] = (xv[i] - yv[i]) * s;
+    return;
+  }
+  out = (x - y) * s; // establishes the pattern; the fast path takes over next
+  out.makeCompressed();
+}
+} // namespace
+
 // Unified updater: update K, Z, (optionally) dK, dZ, factorization, and traces
 void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
+  // Visible to update_dKdZ / update_d2Kd2Z, whose signatures carry no options.
+  // Cleared on the way out so a stale pointer cannot be read later.
+  cur_opts_ = &opts;
+  struct OptsGuard {
+    const UpdateOptions **slot;
+    ~OptsGuard() { *slot = nullptr; }
+  } _og{&cur_opts_};
+
   // 1) Build K and Z once at base theta
-  build_KZ(theta);
+  { ngme_timing::Scope _s(ngme_timing::op_build_us()); build_KZ(theta); }
 
   // Ensure storage ready
   if ((int)dK.size() != n_theta_K)
@@ -165,7 +211,9 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
                                              h.size(), h.size())));
 
   // 2) Derivatives: analytic or numeric
+  ngme_timing::Scope *_dk = new ngme_timing::Scope(ngme_timing::op_dK_us());
   bool have_analytic = false;
+  last_eps_dK_ = opts.eps_dK;
   if ((opts.compute_dK || opts.compute_dZ) && opts.prefer_analytic_dK) {
     have_analytic = update_dKdZ(theta);
   }
@@ -189,9 +237,9 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
         th_f(j) += eps;
         build_KZ(th_f);
         if (opts.compute_dK)
-          dK[j] = (K - K_base) * (1.0 / eps);
+          diff_into(dK[j], K, K_base, 1.0 / eps);
         if (opts.compute_dZ)
-          dZ[j] = (Z - Z_base) * (1.0 / eps);
+          diff_into(dZ[j], Z, Z_base, 1.0 / eps);
       } else {
         VectorXd th_p = theta;
         th_p(j) += eps;
@@ -204,9 +252,9 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
         SparseMatrix<double> Km = K;
         SparseMatrix<double, 0, int> Zm = Z;
         if (opts.compute_dK)
-          dK[j] = (Kp - Km) * (1.0 / (2.0 * eps));
+          diff_into(dK[j], Kp, Km, 1.0 / (2.0 * eps));
         if (opts.compute_dZ)
-          dZ[j] = (Zp - Zm) * (1.0 / (2.0 * eps));
+          diff_into(dZ[j], Zp, Zm, 1.0 / (2.0 * eps));
       }
       // Restore base
       K = K_base;
@@ -294,6 +342,81 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
     }
   }
 
+  // NGME_DIFF_CHECK=1: whenever a closed form supplied dK or d2K, recompute the
+  // same quantity by differencing and report the relative disagreement at two
+  // step sizes. Here the NUMERIC value is the approximation, so a correct
+  // closed form makes the error SHRINK with the step, roughly linearly for
+  // the forward dK, quadratically for the central d2K. A wrong closed form
+  // leaves the error flat, which is what makes this a test rather than a
+  // tolerance check.
+  if ((have_analytic || have_analytic2) && std::getenv("NGME_DIFF_CHECK")) {
+    const SparseMatrix<double> K_save = K;
+    const SparseMatrix<double, 0, int> Z_save = Z;
+    auto relerr = [](const SparseMatrix<double> &x,
+                     const SparseMatrix<double> &y) {
+      const double d = (SparseMatrix<double>(x - y)).norm();
+      const double n = std::max(1e-300, y.norm());
+      return d / n;
+    };
+    // Step sizes to sweep. The d2K reference divides by 4 h^2, so at the
+    // shipped eps=1e-4 that is 4e-8 and rounding noise in K swamps the
+    // truncation error -- the check has to run where truncation dominates, and
+    // then watch it fall like h^2. Override with NGME_DIFF_CHECK_EPS.
+    std::vector<double> eps_list{1e-2, 3e-3, 1e-3};
+    if (const char *el = std::getenv("NGME_DIFF_CHECK_EPS")) {
+      eps_list.clear();
+      std::string sl(el), tok;
+      std::stringstream ss(sl);
+      while (std::getline(ss, tok, ','))
+        if (!tok.empty()) eps_list.push_back(std::atof(tok.c_str()));
+    }
+    for (size_t pass = 0; pass < eps_list.size(); ++pass) {
+      const double e = eps_list[pass];
+      double worst1 = 0.0, worst2 = 0.0;
+      int w1 = -1, w2j = -1, w2k = -1;
+      if (have_analytic)
+        for (int j = 0; j < n_theta_K; ++j) {
+          VectorXd th = theta; th(j) += e;
+          build_KZ(th);
+          SparseMatrix<double> ref = (K - K_save) * (1.0 / e);
+          const double r = relerr(dK[j], ref);
+          if (r > worst1) { worst1 = r; w1 = j; }
+        }
+      if (have_analytic2)
+        for (int j = 0; j < n_theta_K; ++j)
+          for (int k = j; k < n_theta_K; ++k) {
+            const double hj = e * std::max(1.0, std::abs(theta(j)));
+            const double hk = e * std::max(1.0, std::abs(theta(k)));
+            SparseMatrix<double> ref;
+            if (j == k) {
+              VectorXd tp2 = theta; tp2(j) += hj; build_KZ(tp2);
+              SparseMatrix<double> Kp = K;
+              VectorXd tm2 = theta; tm2(j) -= hj; build_KZ(tm2);
+              ref = (Kp - 2.0 * K_save + K) * (1.0 / (hj * hj));
+            } else {
+              VectorXd t1 = theta; t1(j) += hj; t1(k) += hk; build_KZ(t1);
+              SparseMatrix<double> Kpp = K;
+              VectorXd t2 = theta; t2(j) += hj; t2(k) -= hk; build_KZ(t2);
+              SparseMatrix<double> Kpm = K;
+              VectorXd t3 = theta; t3(j) -= hj; t3(k) += hk; build_KZ(t3);
+              SparseMatrix<double> Kmp = K;
+              VectorXd t4 = theta; t4(j) -= hj; t4(k) -= hk; build_KZ(t4);
+              ref = (Kpp - Kpm - Kmp + K) * (1.0 / (4.0 * hj * hk));
+            }
+            const double r = relerr(d2K[j][k], ref);
+            if (r > worst2) { worst2 = r; w2j = j; w2k = k; }
+          }
+      std::fprintf(stderr,
+                   "[diff check] eps=%.3g  dK worst %.3e (theta_K[%d])  "
+                   "d2K worst %.3e (%d,%d)\n",
+                   e, worst1, w1, worst2, w2j, w2k);
+    }
+    K = K_save;
+    Z = Z_save;
+  }
+
+  delete _dk; // closes the dK timer
+  ngme_timing::Scope _tr(ngme_timing::op_trace_us());
   // 3) Factorization. cholK_solver is used for nothing but the traces below,
   // so it is only worth building when a trace is actually wanted and no
   // structural shortcut supplies it.
@@ -328,10 +451,10 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
   // Re-run the symbolic phase exactly when the sparsity pattern moved.
   if (K_pattern_changed() || ngme_counters::cache_disabled()) {
     ngme_counters::bump(ngme_counters::K_analyzes);
-    cholK_solver.analyze(K);
+    { ngme_timing::Scope _s(ngme_timing::k_symbolic_us()); cholK_solver.analyze(K); }
     record_K_pattern();
   }
-  cholK_solver.compute(K);
+  { ngme_timing::Scope _s(ngme_timing::k_numeric_us()); cholK_solver.compute(K); }
   // Either route to K^{-1} for a non-symmetric operator -- the LU of K, or the
   // Cholesky of K^T K -- is factorizing something that is singular only if K
   // itself is degenerate at the current parameters, so a failure means the same
@@ -366,6 +489,36 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
         trace_vals(j) = 0.0;
         continue;
       }
+      // Exact trace from the selected inverse when K's factor is low-fill,
+      // Hutchinson probes otherwise. The gate mirrors BlockModel::qq_trace:
+      // the free lower bound on the fill first, the real ratio only if that
+      // passes (computing it costs a factorization on a non-eigen backend).
+      if (selinv_state_ < 0) {
+        // The operator's factor and QQ's are nowhere near each other in
+        // density so the shared threshold rarely admits the exact route here even when
+        // it would be affordable.
+        const double max_fill = opts.selinv_max_fill;
+        double fr = cholK_solver.fill_lower_bound();
+        bool ruled_out =
+            !cholK_solver.selinv_supported() || fr > max_fill;
+        if (!ruled_out) {
+          fr = cholK_solver.fill_ratio();
+          ruled_out = fr > max_fill;
+        }
+        selinv_state_ = ruled_out ? 0 : 1;
+        if (selinv_state_ == 0)
+          cholK_solver.disable_selinv(); // hand back the factor and S_sel
+      }
+      if (selinv_state_ == 1) {
+        double v = 0.0;
+        if (cholK_solver.selinv_trace(dK[j], v)) {
+          trace_vals(j) = v;
+          continue;
+        }
+        // dK reached outside the factor pattern; probes for the rest of the fit.
+        selinv_state_ = 0;
+        cholK_solver.disable_selinv();
+      }
       trace_vals(j) = cholK_solver.trace(dK[j], opts.trace_seed);
     }
   }
@@ -377,12 +530,21 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
       HK_trace = MatrixXd::Zero(n_theta_K, n_theta_K);
     else
       HK_trace.setZero();
-    for (int j = 0; j < n_theta_K; ++j) {
-      for (int k = j; k < n_theta_K; ++k) {
+    // Loop over k OUTSIDE: S = K^-1 dK_k K^-1 U depends only on k, so it is
+    // computed once per parameter instead of once per pair. That turns the
+    // expensive solve from O(n_theta_K^2) into O(n_theta_K).
+    for (int k = 0; k < n_theta_K; ++k) {
+      Eigen::MatrixXd Sk;
+      bool Sk_ready = false;
+      for (int j = 0; j <= k; ++j) {
         double t1 = 0.0, t2 = 0.0;
         // -tr(K^{-1} K_k K^{-1} K_j)
         if (dK[k].rows() > 0 && dK[j].rows() > 0) {
-          t1 = -cholK_solver.trace2(dK[k], dK[j], opts.trace_seed);
+          if (!Sk_ready) {
+            Sk = cholK_solver.trace2_lhs(dK[k], opts.trace_seed);
+            Sk_ready = true;
+          }
+          t1 = -cholK_solver.trace2_reduce(dK[j], Sk);
         }
         // + tr(K^{-1} K_{jk})
         if (!d2K.empty() && d2K[j][k].rows() > 0) {

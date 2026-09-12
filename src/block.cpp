@@ -1,6 +1,7 @@
 // Implementation for block model and block_rep
 
 #include "block.h"
+#include "include/phase_timing.h"
 #include "include/factor_counters.h"
 #include "include/solver.h"
 #include "include/thread_io.h"
@@ -197,6 +198,14 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     latent_in["solver_type"] = solver_type;
     latent_in["nonsym_solver"] = nonsym_solver;
     latent_in["n_trace_iter"] = n_trace_iter;
+    // The operator traces use the same fill gate as the QQ traces do, so the
+    // threshold has to reach Operator::update_all as well. Read from
+    // control_ngme here rather than from the member, which is assigned further
+    // down in this constructor.
+    latent_in["selinv_max_fill"] =
+        control_ngme.containsElementNamed("selinv_max_fill")
+            ? Rcpp::as<double>(control_ngme["selinv_max_fill"])
+            : 4.0;
     latent_in["robust"] = robust;
     latent_in["nig_param_std"] = nig_param_std;
     unsigned long latent_seed = seed + (i + 1) * 1000;
@@ -259,8 +268,6 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   family = Rcpp::as<string>(noise_in["noise_type"]);
   {
     Rcpp::List cn = block_model["control_ngme"];
-    // BlockModel::debug was never read from the control list, which left the
-    // per-stage timing instrumentation below unreachable.
     if (cn.containsElementNamed("debug"))
       debug = Rcpp::as<bool>(cn["debug"]);
     if (cn.containsElementNamed("selinv_max_fill"))
@@ -461,32 +468,42 @@ void BlockModel::setPrevV(const VectorXd &V) {
 
 // sample W|VY
 void BlockModel::sampleW_VY(bool burn_in) {
+  ngme_timing::Scope _sw(ngme_timing::samplew_us());
   if (n_latent == 0)
     return;
   // Ensure QQ is consistent with current K, Z, and measurement precision before
   // sampling. Nothing that enters QQ changes between the Gibbs draws of a
   // Gaussian model, so this is a no-op after the first draw of an iteration.
-  ensure_QQ();
+  { ngme_timing::Scope _s(ngme_timing::sw_ensureQQ_us()); ensure_QQ(); }
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
 
   // M = K' * inv(SV) * mean + Z'^ A'^ inv(Sigma) * (Y - X * beta - (1 - V) mu)
-  VectorXd M = K.transpose() * inv_SV.asDiagonal() * getMean();
+  ngme_timing::Scope *_sm = new ngme_timing::Scope(ngme_timing::sw_M_us());
+  // Parenthesised so the DIAGONAL meets the vector first.
+  //
+  // `A.transpose() * d.asDiagonal() * v` groups as `(A^T * d) * v`, so Eigen
+  // builds a scaled transpose of A. Scaling the vector instead leaves a single
+  // sparse-transpose-times-vector, which Eigen does without materialising anything.
+  VectorXd M = K.transpose() * (inv_SV.asDiagonal() * getMean());
 
   const SparseMatrix<double> &AZ = get_AZ();
   if (!corr_measure) {
-    M += AZ.transpose() *
-         noise_sigma.array()
-             .pow(-2)
-             .matrix()
-             .cwiseQuotient(noise_V)
-             .asDiagonal() *
-         get_residual_part();
+    M += AZ.transpose() * (noise_sigma.array()
+                               .pow(-2)
+                               .matrix()
+                               .cwiseQuotient(noise_V)
+                               .asDiagonal() *
+                           get_residual_part());
   } else {
-    M += AZ.transpose() * Q_eps * get_residual_part();
+    M += AZ.transpose() * (Q_eps * get_residual_part());
   }
 
-  const SparseMatrix<double> &G = get_G(inv_SV);
-  const SparseMatrix<double> &H = get_sqrt_AtSVA();
+  delete _sm;
+  const SparseMatrix<double> *Gp, *Hp;
+  { ngme_timing::Scope _s(ngme_timing::sw_G_us()); Gp = &get_G(inv_SV); }
+  { ngme_timing::Scope _s(ngme_timing::sw_H_us()); Hp = &get_sqrt_AtSVA(); }
+  const SparseMatrix<double> &G = *Gp;
+  const SparseMatrix<double> &H = *Hp;
   unsigned long seed1 = rng();
   unsigned long seed2 = rng();
   VectorXd z1 = NoiseUtil::rnorm_vec(G.rows(), 0, 1, seed1);
@@ -499,13 +516,14 @@ void BlockModel::sampleW_VY(bool burn_in) {
   // VectorXd W = chol_QQ.rMVN(M, z1);
 
   // Sampling method using tricks, purely solve, not matrixL()
-  VectorXd W_draw = chol_QQ.rMVN(G, H, M, z1, z2);
-  setW(W_draw);
+  { ngme_timing::Scope _s(ngme_timing::rmvn_us());
+    VectorXd W_draw = chol_QQ.rMVN(G, H, M, z1, z2);
+    setW(W_draw);
 
-  if (rao_blackwell && !burn_in) {
-    VectorXd W_mean = chol_QQ.solve(M);
-    set_cond_W(W_mean);
-  }
+    if (rao_blackwell && !burn_in) {
+      VectorXd W_mean = chol_QQ.solve(M);
+      set_cond_W(W_mean);
+    } }
   // std::cout << "size of W and time of sampling is " << W.size() << " " <<
   // time << std::endl; if (debug) std::cout << "Finish sampling W" <<
   // std::endl;
@@ -926,6 +944,7 @@ MatrixXd BlockModel::get_preconditioner() {
 void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
   if (debug)
     ngme_io::out() << "Start compute_grad_and_hessian" << std::endl;
+  ngme_timing::Scope _gt(ngme_timing::grad_total_us());
   auto t_total_start = std::chrono::steady_clock::now();
   long long t_sampleV_ms = 0, t_sampleW_ms = 0, t_rbtrace_ms = 0;
   long long t_build_s_ms = 0, t_set_s_ms = 0, t_dZ_ms = 0, t_grad_ms = 0;
@@ -941,8 +960,7 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
 
   // RB: one pass using conditional W; Gibbs: n_gibbs passes using sampled W
   // Only collapse to a single RB pass for all-Gaussian models.
-  // For non-Gaussian (e.g., NIG), we still need Gibbs over V even if RB is
-  // enabled.
+  // For non-Gaussian we still need Gibbs over V even if RB is enabled.
   bool rb_all_gauss = (all_gaussian && rao_blackwell);
   int n_pass = rb_all_gauss ? 1 : n_gibbs;
   // Use conditional mean of W for building observation score when RB is
@@ -1002,10 +1020,16 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
       VectorXd residual = get_residual(use_condW);
       VectorXd inv_noise_SV =
           noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
-      s_full = A.transpose() * inv_noise_SV.asDiagonal() * residual;
+      // Parenthesised for the same reason as M in sampleW_VY: left-to-right
+      // grouping would build a scaled transpose of the sparse A (n_obs x W)
+      // before touching the vector. Scaling the vector first leaves one
+      // sparse-transpose-times-vector.
+      s_full = A.transpose() * (inv_noise_SV.asDiagonal() * residual);
     } else {
       VectorXd residual = get_residual(use_condW);
-      s_full = A.transpose() * Q_eps * residual;
+      // Likewise: (A^T * Q_eps) is a sparse-sparse product, where
+      // A^T * (Q_eps * residual) is a matrix-vector product twice.
+      s_full = A.transpose() * (Q_eps * residual);
     }
     t_build_s_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::steady_clock::now() - t_bs)
@@ -1427,6 +1451,13 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
   last_gradient = avg_gradient;
   last_grad_valid = true;
 
+  // Publish the sub-phases so an iteration can be accounted whether or not
+  // debug printing is on. Millisecond resolution is what the existing counters
+  // carry; over a fit that is far finer than the numbers being compared.
+  ngme_timing::add(ngme_timing::grad_sampleV_us(), t_sampleV_ms * 1000);
+  ngme_timing::add(ngme_timing::grad_sampleW_us(), t_sampleW_ms * 1000);
+  ngme_timing::add(ngme_timing::grad_rbtrace_us(), t_rbtrace_ms * 1000);
+
   if (debug) {
     auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::steady_clock::now() - t_total_start)
@@ -1584,6 +1615,19 @@ double BlockModel::qq_trace(const SparseMatrix<double> &T, double &probe_var) {
   return v;
 }
 
+double BlockModel::qq_trace_factored_shared(const SparseMatrix<double> &A,
+                                            const VectorXd &d,
+                                            const SparseMatrix<double> &B,
+                                            const Eigen::MatrixXd &BQU,
+                                            bool have_BQU, double &probe_var) {
+  if (selinv_state_ == 0 && have_BQU) {
+    double v = chol_QQ.trace_factored_with(A, d, BQU);
+    probe_var = chol_QQ.last_probe_var();
+    return v;
+  }
+  return qq_trace_factored(A, d, B, probe_var);
+}
+
 double BlockModel::qq_trace_factored(const SparseMatrix<double> &A,
                                      const VectorXd &d,
                                      const SparseMatrix<double> &B,
@@ -1624,16 +1668,29 @@ void BlockModel::compute_rb_trace() {
     VectorXd pv_sigma = VectorXd::Zero(latents[i]->get_n_theta_sigma());
 
 
+    // Both trace loops below use B = K, so K*QU is shared between them and
+    // across every parameter instead of being rebuilt per call. Only on the
+    // probe path: the selected inverse wants the assembled product.
+    Eigen::MatrixXd KQU;
+    bool have_KQU = false;
+    if (selinv_state_ == 0) {
+      KQU = chol_QQ.trace_factored_rhs(K, rng());
+      have_KQU = true;
+    }
+
     // compute for K: tr(QQ^-1 dK^T diag(1/SV) K)
+    { ngme_timing::Scope _s(ngme_timing::rb_sec_K_us());
     for (int j = 0; j < latents[i]->get_n_theta_K(); j++) {
       { double pvj = 0.0;
-        rb_trace_K[j] =
-            -qq_trace_factored(block_dK[i][j], inv_SV, K, pvj);
+        rb_trace_K[j] = -qq_trace_factored_shared(block_dK[i][j], inv_SV, K,
+                                                  KQU, have_KQU, pvj);
         pv_K[j] += pvj; }
+    }
     }
 
     // compute for sigma: tr(Q^-1 K B_sigma.col(j)/SV K^T) for non-fixed
     // theta_sigma
+    ngme_timing::Scope *_ss = new ngme_timing::Scope(ngme_timing::rb_sec_sigma_us());
     vector<bool> fix_theta_sigma_vec = latents[i]->get_theta_unfixed_sigma();
     int pos = 0;
     for (int j = 0; j < latents[i]->get_n_theta_sigma(); j++) {
@@ -1647,19 +1704,39 @@ void BlockModel::compute_rb_trace() {
       BSigma_col_over_SV = BSigma_col_over_SV.cwiseProduct(inv_SV);
 
       { double pvj = 0.0;
-        rb_trace_sigma[j] =
-            qq_trace_factored(K, BSigma_col_over_SV, K, pvj);
+        rb_trace_sigma[j] = qq_trace_factored_shared(
+            K, BSigma_col_over_SV, K, KQU, have_KQU, pvj);
         pv_sigma[j] = pvj; }
       pos += 1;
     }
 
+    delete _ss;
+    ngme_timing::Scope _sz(ngme_timing::rb_sec_Z_us());
     // Add Z-related RB trace: T = (dZ_j)^T A_i^T D A_i Z_i
     // where D is measurement precision (depends on noise settings)
     // Matches: T = dZ^T A^T D A Z
     // where D is measurement precision (depends on noise settings)
-    // Precompute A_i^T D A_i once per latent
+    // This whole section contributes exactly zero unless Z depends on theta.
+    // Most operators build a Z that does not and dZ is then a full-size matrix
+    // of ZEROS rather than an empty one, so the rows()/cols() guard below never
+    // fired: every parameter paid for dZ^T (A^T D A) Z and a trace of the
+    // result, to add zero. The fractional matern DOES carry a theta-dependent
+    // Z (K and Z are the two halves of the rational approximation), so this has
+    // to be decided from the values, not from the model.
+    // NGME_RB_KEEP_ZERO_DZ=1 restores the old behaviour.
+    static const bool keep_zero_dZ = [] {
+      const char *e = std::getenv("NGME_RB_KEEP_ZERO_DZ");
+      return e && *e && std::string(e) != "0";
+    }();
+    bool any_dZ = keep_zero_dZ;
+    for (int j = 0; j < latents[i]->get_n_theta_K() && !any_dZ; ++j) {
+      const auto &dZ_j = latents[i]->get_dZ(j);
+      any_dZ = dZ_j.rows() > 0 && dZ_j.cols() > 0 && dZ_j.nonZeros() > 0;
+    }
+
+    // Precompute A_i^T D A_i once per latent -- and only if it will be used.
     SparseMatrix<double> ADA_i;
-    {
+    if (any_dZ) {
       const auto &Ai = latents[i]->getA();
       if (!corr_measure) {
         // D = diag(1 / (sigma^2 V))
@@ -1672,11 +1749,25 @@ void BlockModel::compute_rb_trace() {
       }
     }
 
+    if (!any_dZ) {
+      // Skipping changes no VALUE but qq_trace() draws one probe seed per call on the
+      // Hutchinson path, so skipping it silently would shift the random stream
+      // and move every later draw. Advance the stream by exactly what the
+      // skipped calls would have taken, so this optimisation is invisible in
+      // the results rather than merely equivalent in expectation. (The exact
+      // selected-inverse path draws nothing, hence the state test;
+      // selinv_state_ is already decided here by the theta_K loop above.)
+      if (selinv_state_ != 1)
+        for (int j = 0; j < latents[i]->get_n_theta_K(); ++j)
+          rng();
+    }
+
     // Compute and accumulate per-parameter Z traces
-    for (int j = 0; j < latents[i]->get_n_theta_K(); ++j) {
+    for (int j = 0; any_dZ && j < latents[i]->get_n_theta_K(); ++j) {
       const auto &dZ_j = latents[i]->get_dZ(j);
-      if (dZ_j.rows() == 0 || dZ_j.cols() == 0)
-        continue; // skip if operator doesn't provide Z
+      if (dZ_j.rows() == 0 || dZ_j.cols() == 0 ||
+          (!keep_zero_dZ && dZ_j.nonZeros() == 0))
+        continue; // Z does not move with this parameter: the trace is zero
       const auto &Zi = latents[i]->getZ();
       // Local block in latent i's W-space
       SparseMatrix<double> Tloc = dZ_j.transpose() * ADA_i * Zi;
@@ -1698,20 +1789,20 @@ void BlockModel::compute_rb_trace() {
   }
 
   // compute for theta_sigma
+  ngme_timing::Scope _sn(ngme_timing::rb_sec_noise_us());
   VectorXd noise_SV = noise_V.cwiseProduct(noise_sigma.array().pow(2).matrix());
+  // AZ does not depend on j, and get_AZ() already holds exactly this matrix,
+  // rebuilt only when set_parameter_and_update() invalidates it. Assembling it
+  // per j meant recomputing A_i Z_i for every theta_sigma on every Gibbs draw.
+  const SparseMatrix<double> &AZ = get_AZ();
   for (int j = 0; j < n_theta_sigma; j++) {
-    // Include Z: T = (A Z)^T diag(B_sigma_j / noise_SV) (A Z)
-    SparseMatrix<double> AZ(n_obs, W_sizes);
-    int col = 0;
-    for (int li = 0; li < n_latent; ++li) {
-      SparseMatrix<double> AiZi = latents[li]->getA() * latents[li]->getZ();
-      setSparseBlock(&AZ, 0, col, AiZi);
-      col += latents[li]->get_W_size();
-    }
-    SparseMatrix<double> T =
-        AZ.transpose() * B_sigma.col(j).cwiseQuotient(noise_SV).asDiagonal() *
-        AZ;
-    { double pvj = 0.0; rb_trace_noise_sigma[j] = qq_trace(T, pvj);
+    // T = (A Z)^T diag(B_sigma_j / noise_SV) (A Z), but never formed: AZ has
+    // n_obs rows, so that triple product is by far the most expensive thing in
+    // this function. trace_factored() applies the same three factors to the probe
+    // block instead, where nothing bigger than n x N_iter is ever built.
+    { double pvj = 0.0;
+      rb_trace_noise_sigma[j] = qq_trace_factored(
+          AZ, B_sigma.col(j).cwiseQuotient(noise_SV), AZ, pvj);
       if (rb_probe_var_noise_sigma.size() != n_theta_sigma)
         rb_probe_var_noise_sigma = VectorXd::Zero(n_theta_sigma);
       rb_probe_var_noise_sigma[j] = pvj; }
@@ -1814,6 +1905,7 @@ const SparseMatrix<double> &BlockModel::get_G(const VectorXd &inv_SV) const {
 const SparseMatrix<double> &BlockModel::get_QQ_measure() const {
   if (QQ_measure_valid && !ngme_counters::cache_disabled())
     return QQ_measure;
+  ngme_timing::Scope _s(ngme_timing::qq_measure_us());
   if (!corr_measure) {
     const SparseMatrix<double> &H = get_sqrt_AtSVA();
     QQ_measure = H.transpose() * H;
@@ -1926,6 +2018,33 @@ constexpr double QQ_JITTER_BASE = 1e-10;
 constexpr int QQ_JITTER_ATTEMPTS = 6;
 } // namespace
 
+// Check that QQ's pattern really is the union of Q's and the measurement
+// block's, and record the nnz the check was made against. Both operands are
+// CSC with sorted inner indices, so one merge walk per column visits every
+// entry; anything left unplaced means the fast merge in update_QQ() would
+// silently drop terms, and the guard nnz are reset so it is not taken.
+void BlockModel::record_qq_add_pattern(const SparseMatrix<double> &Qm,
+                                       const SparseMatrix<double> &Me) {
+  const int *Qp = Qm.outerIndexPtr(), *Qi = Qm.innerIndexPtr();
+  const int *Mp = Me.outerIndexPtr(), *Mi = Me.innerIndexPtr();
+  const int *Tp = QQ.outerIndexPtr(), *Ti = QQ.innerIndexPtr();
+  for (int c = 0; c < QQ.outerSize(); ++c) {
+    int qp = Qp[c], mp = Mp[c];
+    const int qe = Qp[c + 1], me = Mp[c + 1];
+    for (int t = Tp[c]; t < Tp[c + 1]; ++t) {
+      const int row = Ti[t];
+      if (qp < qe && Qi[qp] == row) ++qp;
+      if (mp < me && Mi[mp] == row) ++mp;
+    }
+    if (qp != qe || mp != me) {
+      qq_map_q_nnz_ = qq_map_meas_nnz_ = -1;
+      return;
+    }
+  }
+  qq_map_q_nnz_ = (long long)Qm.nonZeros();
+  qq_map_meas_nnz_ = (long long)Me.nonZeros();
+}
+
 void BlockModel::update_QQ() {
   ngme_counters::bump(ngme_counters::QQ_builds);
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
@@ -1933,8 +2052,46 @@ void BlockModel::update_QQ() {
 
   // update Q and QQ. Only the latent block K' diag(1/SV) K has to be redone on
   // every draw; the measurement block is cached and reused.
-  Q = K.transpose() * inv_SV.asDiagonal() * K;
-  QQ = Q + get_QQ_measure();
+  { ngme_timing::Scope _s(ngme_timing::qq_assemble_us());
+    { ngme_timing::Scope _p(ngme_timing::qq_prod_us());
+      // Caching K^T across Gibbs draws was tried here (K is constant over a
+      // sweep while 1/SV is not) and measured no better.
+      Q = K.transpose() * inv_SV.asDiagonal() * K; }
+    { ngme_timing::Scope _a(ngme_timing::qq_add_us());
+      const SparseMatrix<double> &Me = get_QQ_measure();
+      // QQ's pattern is the union of the two operands' and does not move while
+      // they keep their nnz, so it is established once and thereafter only the
+      // values are refilled -- which matters because this runs once per Gibbs
+      // draw of a non-Gaussian model.
+      const bool pattern_ok = qq_map_q_nnz_ == (long long)Q.nonZeros() &&
+                              qq_map_meas_nnz_ == (long long)Me.nonZeros() &&
+                              QQ.rows() == Q.rows() && QQ.isCompressed() &&
+                              !ngme_counters::cache_disabled();
+      if (!pattern_ok) {
+        QQ = Q + Me;
+        QQ.makeCompressed();
+        record_qq_add_pattern(Q, Me);
+      } else {
+        // Merge both operands straight into QQ's existing storage. All three
+        // are CSC with sorted inner indices, so one walk per column fills it
+        // with no allocation.
+        const int *Qp = Q.outerIndexPtr(), *Qi = Q.innerIndexPtr();
+        const int *Mp = Me.outerIndexPtr(), *Mi = Me.innerIndexPtr();
+        const int *Tp = QQ.outerIndexPtr(), *Ti = QQ.innerIndexPtr();
+        const double *qv = Q.valuePtr(), *mv = Me.valuePtr();
+        double *v = QQ.valuePtr();
+        for (int c = 0; c < QQ.outerSize(); ++c) {
+          int qp = Qp[c], mp = Mp[c];
+          const int qe = Qp[c + 1], me = Mp[c + 1];
+          for (int t = Tp[c]; t < Tp[c + 1]; ++t) {
+            const int row = Ti[t];
+            double acc = 0.0;
+            if (qp < qe && Qi[qp] == row) acc += qv[qp++];
+            if (mp < me && Mi[mp] == row) acc += mv[mp++];
+            v[t] = acc;
+          }
+        }
+      } } }
   if (robust) {
     QQ = 0.5 * (QQ + SparseMatrix<double>(QQ.transpose()));
     // double mean_diag = QQ.diagonal().mean();
@@ -1953,10 +2110,10 @@ void BlockModel::update_QQ() {
       QQ.makeCompressed();
     if (QQ_pattern_changed()) {
       ngme_counters::bump(ngme_counters::QQ_analyzes);
-      chol_QQ.analyze(QQ);
+      { ngme_timing::Scope _s(ngme_timing::qq_symbolic_us()); chol_QQ.analyze(QQ); }
       record_QQ_pattern();
     }
-    chol_QQ.compute(QQ);
+    { ngme_timing::Scope _s(ngme_timing::qq_numeric_us()); chol_QQ.compute(QQ); }
     return chol_QQ.factorization_success();
   };
 

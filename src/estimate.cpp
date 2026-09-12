@@ -8,6 +8,7 @@
 #undef COMPLEX
 
 #include "include/factor_counters.h"
+#include "include/phase_timing.h"
 #include "include/thread_io.h"
 #include "include/timer.h"
 #include "ngme.h"
@@ -1944,6 +1945,86 @@ int set_openmp_threads(int n) {
   (void)n;
   return 0;
 #endif
+}
+
+// Cumulative time in the Cholesky factorizations themselves, in seconds, since
+// the library was loaded (reset = TRUE zeroes them). The factorizations are the
+// floor of a fit -- no change to the estimator removes them -- so their share
+// says how much of the runtime is even addressable.
+//
+// The counters are compiled out unless the package was built with
+// -DNGME_PHASE_TIMING, so every entry reads zero in an ordinary build. The
+// "enabled" element says which it is: all-zero timings are otherwise
+// indistinguishable from a fit that did no work.
+// [[Rcpp::export]]
+Rcpp::NumericVector factorization_timing(bool reset = false) {
+  Rcpp::NumericVector out = Rcpp::NumericVector::create(
+#ifdef NGME_PHASE_TIMING
+      Rcpp::_["enabled"] = 1.0,
+#else
+      Rcpp::_["enabled"] = 0.0,
+#endif
+      Rcpp::_["qq_numeric"] = ngme_timing::qq_numeric_us().load() * 1e-6,
+      Rcpp::_["qq_symbolic"] = ngme_timing::qq_symbolic_us().load() * 1e-6,
+      Rcpp::_["k_numeric"] = ngme_timing::k_numeric_us().load() * 1e-6,
+      Rcpp::_["k_symbolic"] = ngme_timing::k_symbolic_us().load() * 1e-6,
+      Rcpp::_["op_build"] = ngme_timing::op_build_us().load() * 1e-6,
+      Rcpp::_["op_dK"] = ngme_timing::op_dK_us().load() * 1e-6,
+      Rcpp::_["op_trace"] = ngme_timing::op_trace_us().load() * 1e-6,
+      Rcpp::_["grad_total"] = ngme_timing::grad_total_us().load() * 1e-6,
+      Rcpp::_["grad_sampleV"] = ngme_timing::grad_sampleV_us().load() * 1e-6,
+      Rcpp::_["grad_sampleW"] = ngme_timing::grad_sampleW_us().load() * 1e-6,
+      Rcpp::_["grad_rbtrace"] = ngme_timing::grad_rbtrace_us().load() * 1e-6,
+      Rcpp::_["rb_qu_solve"] = ngme_timing::rb_qu_solve_us().load() * 1e-6,
+      Rcpp::_["rb_product"] = ngme_timing::rb_product_us().load() * 1e-6,
+      Rcpp::_["rb_calls"] = (double)ngme_timing::rb_calls().load(),
+      Rcpp::_["rb_sec_K"] = ngme_timing::rb_sec_K_us().load() * 1e-6,
+      Rcpp::_["rb_sec_sigma"] = ngme_timing::rb_sec_sigma_us().load() * 1e-6,
+      Rcpp::_["rb_sec_Z"] = ngme_timing::rb_sec_Z_us().load() * 1e-6,
+      Rcpp::_["rb_sec_noise"] = ngme_timing::rb_sec_noise_us().load() * 1e-6,
+      Rcpp::_["qq_assemble"] = ngme_timing::qq_assemble_us().load() * 1e-6,
+      Rcpp::_["qq_prod"] = ngme_timing::qq_prod_us().load() * 1e-6,
+      Rcpp::_["qq_add"] = ngme_timing::qq_add_us().load() * 1e-6,
+      Rcpp::_["qq_measure"] = ngme_timing::qq_measure_us().load() * 1e-6,
+      Rcpp::_["rmvn"] = ngme_timing::rmvn_us().load() * 1e-6,
+      Rcpp::_["set_param"] = ngme_timing::set_param_us().load() * 1e-6,
+      Rcpp::_["samplew"] = ngme_timing::samplew_us().load() * 1e-6,
+      Rcpp::_["sw_ensureQQ"] = ngme_timing::sw_ensureQQ_us().load() * 1e-6,
+      Rcpp::_["sw_M"] = ngme_timing::sw_M_us().load() * 1e-6,
+      Rcpp::_["sw_G"] = ngme_timing::sw_G_us().load() * 1e-6,
+      Rcpp::_["sw_H"] = ngme_timing::sw_H_us().load() * 1e-6);
+  if (reset) {
+    ngme_timing::qq_numeric_us().store(0);
+    ngme_timing::qq_symbolic_us().store(0);
+    ngme_timing::k_numeric_us().store(0);
+    ngme_timing::k_symbolic_us().store(0);
+    ngme_timing::op_build_us().store(0);
+    ngme_timing::op_dK_us().store(0);
+    ngme_timing::op_trace_us().store(0);
+    ngme_timing::grad_total_us().store(0);
+    ngme_timing::grad_sampleV_us().store(0);
+    ngme_timing::grad_sampleW_us().store(0);
+    ngme_timing::grad_rbtrace_us().store(0);
+    ngme_timing::rb_qu_solve_us().store(0);
+    ngme_timing::rb_product_us().store(0);
+    ngme_timing::rb_calls().store(0);
+    ngme_timing::rb_sec_K_us().store(0);
+    ngme_timing::rb_sec_sigma_us().store(0);
+    ngme_timing::rb_sec_Z_us().store(0);
+    ngme_timing::rb_sec_noise_us().store(0);
+    ngme_timing::qq_assemble_us().store(0);
+    ngme_timing::qq_prod_us().store(0);
+    ngme_timing::qq_add_us().store(0);
+    ngme_timing::qq_measure_us().store(0);
+    ngme_timing::rmvn_us().store(0);
+    ngme_timing::set_param_us().store(0);
+    ngme_timing::samplew_us().store(0);
+    ngme_timing::sw_ensureQQ_us().store(0);
+    ngme_timing::sw_M_us().store(0);
+    ngme_timing::sw_G_us().store(0);
+    ngme_timing::sw_H_us().store(0);
+  }
+  return out;
 }
 
 // [[Rcpp::export]]

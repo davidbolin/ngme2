@@ -59,3 +59,6 @@ tmp_files/
 # SuiteSparse library files
 src/SuiteSparse/**/*.a
 .aider*
+.positai
+# compiler-generated header dependency lists (src/Makevars)
+*.d

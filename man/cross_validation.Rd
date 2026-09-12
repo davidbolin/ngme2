@@ -24,6 +24,7 @@ cross_validation(
   keep_pred = FALSE,
   parallel = FALSE,
   thining_gap = 1,
+  max_num_threads = NULL,
   cores_layer1 = if (parallel) min(parallel::detectCores(), 2) else 1,
   cores_layer2 = if (parallel) min(parallel::detectCores(), 2) else 1,
   merge_groups = FALSE,
@@ -83,6 +84,11 @@ to the observations and to every posterior draw.}
 \item{parallel}{logical, run in parallel mode}
 
 \item{thining_gap}{integer, the gap between samples for thinning, if 0, then no thinning, if 1, then keep 50\% of the samples for CRPS, sCRPS, etc.}
+
+\item{max_num_threads}{cap on OpenMP threads for the scoring passes. Fitting
+sets this from \code{control_opt}, but scoring does not, so a session that only
+cross-validates inherits one thread per core; several concurrent runs then
+oversubscribe. \code{NULL} (default) leaves the current setting untouched.}
 
 \item{cores_layer1}{integer, number of cores for the first layer (over testing samples)}
 

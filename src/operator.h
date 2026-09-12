@@ -54,9 +54,15 @@ struct UpdateOptions {
   bool robust_reanalyze{false};
   bool prefer_analytic_dK{true};
   bool prefer_analytic_dZ{true};
-  bool prefer_analytic_d2K{false};
+  // true so an operator that HAS a closed form for d2K uses it. Every operator
+  // without one returns false from update_d2Kd2Z() and still gets the numeric
+  // route, so this changes nothing for them.
+  bool prefer_analytic_d2K{true};
   bool prefer_analytic_d2Z{false};
   int n_trace_iter{8};
+  // Fill threshold above which the exact selected inverse is abandoned for
+  // Hutchinson probes; same meaning and same default as BlockModel's.
+  double selinv_max_fill{4.0};
   int solver_type{0};
   // 0 = LU of K, 1 = Cholesky of K^T K (non-symmetric operators only)
   int nonsym_solver{0};
@@ -97,10 +103,21 @@ protected:
   std::vector<int> K_pat_outer, K_pat_inner;
   void record_K_pattern();
   bool K_pattern_changed() const;
+  // eps the current update_all() would use for numeric differencing, so an
+  // override of update_dKdZ can reproduce the base class's difference exactly
+  // instead of inventing its own step.
+  double last_eps_dK_{1e-4};
+  // The options of the update_all() call currently in progress, so that
+  // update_dKdZ / update_d2Kd2Z can see what the caller actually asked for.
+  // Valid only inside update_all().
+  const UpdateOptions *cur_opts_{nullptr};
   VectorXd trace_vals; // size n_theta_K; tr(K^-1 dK) or NormalEq variant
   bool trace_ready{false};
   MatrixXd HK_trace; // n_theta_K x n_theta_K; H_K trace block
   bool HK_trace_ready{false};
+  // -1 undecided, 0 probes, 1 exact selected inverse. Decided once: it turns on
+  // the fill of K's factor, and K's pattern does not move during a fit.
+  int selinv_state_{-1};
 
 public:
   Operator(const Rcpp::List &operator_list)
@@ -215,6 +232,19 @@ public:
 
   void build_KZ(const VectorXd &) override;
   int get_alpha() const { return alpha; }
+  // Closed-form derivatives for the integer cases. kappa = exp(B_kappa theta)
+  // enters K only through a diagonal, so every derivative is one diagonal
+  // rescaling plus at most two sparse products.
+  bool update_dKdZ(const VectorXd &) override;
+  bool update_d2Kd2Z(const VectorXd &) override;
+
+private:
+  // A = G + (C diag(kappa^2)  or  Dk C Dk), the alpha = 2 operator and the
+  // inner factor of the alpha = 4 one. Also returns the per-parameter
+  // derivatives of A, which both orders need.
+  bool matern_dA(const VectorXd &theta_K, SparseMatrix<double> &A,
+                 std::vector<SparseMatrix<double>> &dA,
+                 std::vector<std::vector<SparseMatrix<double>>> *d2A) const;
 };
 
 // ARMA(p,q) operator: K = G + sum_j phi_j C_j; Z = I + sum_k theta_k L^k
@@ -261,11 +291,31 @@ class Tensor_prod : public Operator {
 private:
   std::shared_ptr<Operator> first, second;
   int n_theta_1, n_theta_2;
+  // True once the factors have been brought up to date at the current theta
+  // during THIS update_all, so the three places that need their derivatives
+  // and traces share one factor update instead of repeating it. Cleared in
+  // build_KZ(), which runs at the start of every update_all.
+  bool factors_current_{false};
+  // Build the per-factor options and run both factors' update_all.
+  bool update_factors(const VectorXd &theta, const UpdateOptions &opts);
 
 public:
   Tensor_prod(const Rcpp::List &);
 
   void build_KZ(const VectorXd &) override;
+  // Analytic derivatives from the Kronecker structure:
+  //     dK/dtheta_1j = (dK_1/dtheta_1j) (x) K_2
+  //     dK/dtheta_2j = K_1 (x) (dK_2/dtheta_2j)
+  // Without this the base class falls back to numeric differencing, which
+  // rebuilds the whole Kronecker product once per parameter per iteration.
+  bool update_dKdZ(const VectorXd &) override;
+  // Second derivatives from the same Kronecker structure:
+  //     d2K/dtheta_1j dtheta_1k = (d2K_1/dtheta_1j dtheta_1k) (x) K_2
+  //     d2K/dtheta_1j dtheta_2k = (dK_1/dtheta_1j) (x) (dK_2/dtheta_2k)
+  //     d2K/dtheta_2j dtheta_2k = K_1 (x) (d2K_2/dtheta_2j dtheta_2k)
+  // Without this the base class differences the WHOLE Kronecker product four
+  // times per parameter pair.
+  bool update_d2Kd2Z(const VectorXd &) override;
   bool compute_traces_structured(const VectorXd &,
                                  const UpdateOptions &) override;
 };
@@ -290,10 +340,10 @@ private:
   // instead of nt - 1. Decided once in the constructor: the B lists are fixed
   // data, not parameters, so this cannot change as theta moves.
   bool gamma_time_invariant{false};
-  // BtCs with its FIRST BLOCK ROW removed. That row is the rw1 operator's
+  // BtCs with its first block row removed. That row is the rw1 operator's
   // trapezoid row, which couples time slice 1 to every other slice; dropping it
   // is what leaves K block lower-bidiagonal and lets slice 1 carry its own
-  // stationary block instead. Built once -- it is fixed data, not a parameter.
+  // stationary block instead.
   SparseMatrix<double, 0, int> BtCs_st;
   int ns_{0};                  // spatial dimension = Cs.rows()
   bool stationary_init{true};  // give slice 1 the stationary distribution
@@ -301,6 +351,52 @@ private:
   // between temporal and spatial, to reduce confounding with sigma.
   bool cc_variance_free{false};
   bool block_trace_checked_{false};
+
+  // Selected-inverse route for the diagonal-block traces. tr(M^-1 B) needs
+  // M^-1 only where B is nonzero, so one selected inverse per distinct block
+  // serves every parameter . One solver per distinct block, kept across
+  // iterations so the symbolic phase is paid once: only the values move.
+  std::vector<std::unique_ptr<sparse_llt_solver>> blk_solver_;
+  // nnz the block had when that solver was last analyzed; -1 = never.
+  std::vector<long long> blk_nnz_;
+  // -1 undecided, 0 ruled out (non-symmetric block, failed factorization, or a
+  // derivative entry outside the factor pattern) -- once ruled out, stay on the
+  // LU path rather than retrying the same failure every iteration.
+  int blk_selinv_state_{-1};
+  // Debug counter for NGME_SPACETIME_TRACE_CHECK only.
+  // LU per distinct diagonal block, built only when the Hessian traces need
+  // dense solves and the selected-inverse path (which has no LU) is in use.
+  // By pointer: Eigen's SparseLU is neither copyable nor movable, so a plain
+  // vector of them cannot be resized.
+  std::vector<std::unique_ptr<Eigen::SparseLU<SparseMatrix<double>>>> hk_lu_;
+  int selinv_calls_{0};
+  int selinv_fail_{0};
+
+  // tr(M_b^-1 B) via the selected inverse of block b. False when the route is
+  // unavailable, in which case the caller must fall back.
+  bool block_trace_selinv(int b, const SparseMatrix<double, 0, int> &B,
+                          double &out);
+
+  // ---- closed-form derivative helpers, see tensorprod.cpp ----
+  // out = base_coef * (BtCs_st or BtCs) + blockdiag(0, blk...) + pad(first).
+  // Every derivative of K has this shape, because K itself does.
+  void assemble_shaped(SparseMatrix<double> &out, double base_coef,
+                       const std::vector<SparseMatrix<double>> &blk,
+                       bool uniform, const SparseMatrix<double> &first,
+                       bool has_first) const;
+  // dLs/dtheta_m and d2Ls/dtheta_m dtheta_n for the interior block at time node
+  // i. theta_0 (cc) does not enter Ls, so m, n >= 1. False means identically
+  // zero, which the caller can then skip rather than assemble.
+  bool dLs_block(int m, int i, double k2, SparseMatrix<double> &out) const;
+  bool d2Ls_block(int m, int n, int i, double k2,
+                  SparseMatrix<double> &out) const;
+  // Everything both derivative routines need from theta, gathered once. False
+  // for a configuration the closed form does not cover.
+  bool analytic_state(const VectorXd &theta_K, double &c, double &k2, double &a,
+                      double &s, double &q, bool &uniform,
+                      std::vector<SparseMatrix<double>> &Ls, bool &has_stat,
+                      SparseMatrix<double> &M, double &mm, double &nn,
+                      double &u) const;
 
 public:
   Spacetime(const Rcpp::List &);
@@ -312,6 +408,13 @@ public:
   // probes nor a factorization of the full (nt*ns) x (nt*ns) operator.
   bool compute_traces_structured(const VectorXd &,
                                  const UpdateOptions &) override;
+
+  // Closed-form derivatives. Numeric differencing calls build_KZ() once per
+  // parameter for dK and FOUR times per parameter PAIR for d2K, and every one
+  // of those assembles the full (nt*ns) operator. Both return false for a
+  // configuration they do not cover, leaving the numeric route in place.
+  bool update_dKdZ(const VectorXd &) override;
+  bool update_d2Kd2Z(const VectorXd &) override;
 };
 
 // Bivar
@@ -346,6 +449,18 @@ public:
 
   void build_KZ(const VectorXd &theta_K);
   double apply_transform(double value, const string &trans_type) const;
+  // K is a linear combination of fixed matrices whose coefficients are
+  // products of scalar transforms of theta, so every derivative is available
+  // in closed form.
+  bool update_dKdZ(const VectorXd &) override;
+  bool update_d2Kd2Z(const VectorXd &) override;
+
+private:
+  // Per-matrix coefficient factors for each parameter, and their derivatives:
+  // f[p][i] = T(theta_p, trans[p][i]), with f1 and f2 the 1st and 2nd
+  // derivatives. A parameter absent from trans_map contributes a constant 1.
+  void coef_factors(const VectorXd &theta_K, std::vector<VectorXd> &f,
+                    std::vector<VectorXd> &f1, std::vector<VectorXd> &f2) const;
 };
 
 class generic_ns : public Operator {

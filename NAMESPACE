@@ -134,45 +134,53 @@ export(traceplot)
 export(var1)
 import(Rcpp)
 importFrom(Rcpp,evalCpp)
-importFrom(fmesher,fm_basis)
-importFrom(fmesher,fm_fem)
-importFrom(fmesher,fm_mesh_1d)
-importFrom(fmesher,fm_mesh_2d)
-importFrom(ggplot2,aes)
-importFrom(ggplot2,geom_hline)
-importFrom(ggplot2,geom_line)
-importFrom(ggplot2,ggplot)
-importFrom(ggplot2,guides)
-importFrom(ggplot2,labs)
-importFrom(ggplot2,xlab)
-importFrom(ggplot2,ylab)
+importFrom(fmesher,
+  fm_basis,
+  fm_fem,
+  fm_mesh_1d,
+  fm_mesh_2d
+)
+importFrom(ggplot2,
+  aes,
+  geom_hline,
+  geom_line,
+  ggplot,
+  guides,
+  labs,
+  xlab,
+  ylab
+)
 importFrom(graphics,hist)
 importFrom(methods,as)
 importFrom(rlang,.data)
-importFrom(stats,aggregate)
-importFrom(stats,as.formula)
-importFrom(stats,delete.response)
-importFrom(stats,density)
-importFrom(stats,dgamma)
-importFrom(stats,dist)
-importFrom(stats,dnorm)
-importFrom(stats,formula)
-importFrom(stats,median)
-importFrom(stats,model.frame)
-importFrom(stats,model.matrix)
-importFrom(stats,qgamma)
-importFrom(stats,qlogis)
-importFrom(stats,quantile)
-importFrom(stats,rgamma)
-importFrom(stats,rnorm)
-importFrom(stats,sd)
-importFrom(stats,setNames)
-importFrom(stats,simulate)
-importFrom(stats,terms)
-importFrom(stats,terms.formula)
-importFrom(utils,capture.output)
-importFrom(utils,head)
-importFrom(utils,modifyList)
-importFrom(utils,str)
-importFrom(utils,tail)
+importFrom(stats,
+  aggregate,
+  as.formula,
+  delete.response,
+  density,
+  dgamma,
+  dist,
+  dnorm,
+  formula,
+  median,
+  model.frame,
+  model.matrix,
+  qgamma,
+  qlogis,
+  quantile,
+  rgamma,
+  rnorm,
+  sd,
+  setNames,
+  simulate,
+  terms,
+  terms.formula
+)
+importFrom(utils,
+  capture.output,
+  head,
+  modifyList,
+  str,
+  tail
+)
 useDynLib(ngme2, .registration = TRUE)

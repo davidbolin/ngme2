@@ -128,6 +128,7 @@ protected:
     int solver_type_ {0};
     int nonsym_solver_ {0};
     int n_trace_iter_ {8};
+    double selinv_max_fill_ {4.0};
     bool robust_ {false};
     // Standardised (Cabral, Bolin & Rue 2023, sec 2.1) coordinates for the
     // stationary NIG noise. The optimiser works in

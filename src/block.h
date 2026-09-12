@@ -157,6 +157,14 @@ protected:
   // chol_QQ still match the current state; every mutator that can invalidate
   // them calls invalidate_QQ() / invalidate_AZ().
   bool QQ_valid{false};
+  // QQ = Q + QQ_measure is a sparse-sparse ADD, and Eigen recomputes the union
+  // pattern and reallocates on every call even though both operands' patterns
+  // are fixed within a fit. The nnz each operand had when QQ's pattern was last
+  // established; while they hold, the add is a value-only merge into QQ's
+  // existing storage.
+  long long qq_map_q_nnz_{-1}, qq_map_meas_nnz_{-1};
+  void record_qq_add_pattern(const SparseMatrix<double> &Qm,
+                             const SparseMatrix<double> &Me);
   // Sparsity pattern QQ had when chol_QQ.analyze() was last run. The symbolic
   // phase only has to be redone when the pattern actually changes, which for
   // rational (fractional) approximations happens when the smoothness crosses
@@ -200,6 +208,11 @@ public:
   void burn_in(int);
 
   int get_n_obs() const { return n_obs; }
+  // The drawn W is NOT redundant, even for an all-Gaussian model under
+  // Rao-Blackwellisation. The gradient takes cond_W, but the preconditioner's
+  // Hessian takes the DRAW, and it must: H_K is QUADRATIC in W, so
+  // E[H(W)|Y] != H(E[W|Y]). The difference is tr(A Cov(W|Y)), which the
+  // gradient handles with its own RB trace terms and the Hessian has none of.
   void sampleW_VY(bool burn_in = false);
   // Draw W from its prior given V (no conditioning on Y).
   void sampleW_V();
@@ -317,6 +330,15 @@ public:
   // instead of multiplying them out first -- the product is as dense as QQ and
   // is built once per parameter per iteration. Falls back to assembling it when
   // the selected inverse is in use, since that route reads T's entries.
+  // Variant taking a pre-computed B*QU, so a loop over parameters that all
+  // share the same B pays for that product once. Falls back to the ordinary
+  // path whenever the selected inverse is in play (which needs the assembled
+  // product anyway).
+  double qq_trace_factored_shared(const Eigen::SparseMatrix<double, 0, int> &A,
+                                  const Eigen::VectorXd &d,
+                                  const Eigen::SparseMatrix<double, 0, int> &B,
+                                  const Eigen::MatrixXd &BQU, bool have_BQU,
+                                  double &probe_var);
   double qq_trace_factored(const Eigen::SparseMatrix<double, 0, int> &A,
                            const Eigen::VectorXd &d,
                            const Eigen::SparseMatrix<double, 0, int> &B,

@@ -1,5 +1,10 @@
 #include "../include/solver.h"
+#include "../include/phase_timing.h"
+#include <algorithm>
+#include <cstdio>
 #include <random>
+#include <utility>
+#include <vector>
 
 using namespace Eigen;
 double myround(double x) {
@@ -55,7 +60,7 @@ void sparse_llt_solver::ensure_QU(unsigned int seed) {
   if (QU_computed != 0)
     return;
   ensure_U(seed);
-  QU = solve(U);
+  { ngme_timing::Scope _s(ngme_timing::rb_qu_solve_us()); QU = solve(U); }
   QU_computed = 1;
 }
 
@@ -81,8 +86,27 @@ double sparse_llt_solver::reduce_probes(const Eigen::MatrixXd &MQU) {
 double sparse_llt_solver::trace(const SparseMatrix<double, 0, int> &M,
                                 unsigned int seed) {
   ensure_QU(seed);
+  ngme_timing::add(ngme_timing::rb_calls(), 1);
+  ngme_timing::Scope _p(ngme_timing::rb_product_us());
   // QU is K^{-1} U, so u^T M K^{-1} u estimates tr(K^{-1} M).
   return reduce_probes(M * QU);
+}
+
+Eigen::MatrixXd
+sparse_llt_solver::trace_factored_rhs(const SparseMatrix<double, 0, int> &B,
+                                      unsigned int seed) {
+  ensure_QU(seed);
+  return B * QU;
+}
+
+double
+sparse_llt_solver::trace_factored_with(const SparseMatrix<double, 0, int> &A,
+                                       const Eigen::VectorXd &d,
+                                       const Eigen::MatrixXd &BQU) {
+  ngme_timing::add(ngme_timing::rb_calls(), 1);
+  ngme_timing::Scope _p(ngme_timing::rb_product_us());
+  Eigen::MatrixXd X = d.asDiagonal() * BQU;
+  return reduce_probes(A.transpose() * X);
 }
 
 double sparse_llt_solver::trace_factored(const SparseMatrix<double, 0, int> &A,
@@ -90,6 +114,8 @@ double sparse_llt_solver::trace_factored(const SparseMatrix<double, 0, int> &A,
                                          const SparseMatrix<double, 0, int> &B,
                                          unsigned int seed) {
   ensure_QU(seed);
+  ngme_timing::add(ngme_timing::rb_calls(), 1);
+  ngme_timing::Scope _p(ngme_timing::rb_product_us());
   // (A^T diag(d) B) QU, right to left, so nothing bigger than n x N_iter is
   // ever built. Mathematically identical to trace(A.transpose() * d.asDiagonal()
   // * B); the association differs, so the two agree to round-off, not bitwise.
@@ -112,6 +138,27 @@ double sparse_llt_solver::trace_factored(const SparseMatrix<double, 0, int> &A,
 // -- which compensated with a K^T A product -- was unbiased but carried around
 // a hundred times the standard deviation of this form. Both are why the
 // normal-equations mode was previously unusable for a non-symmetric operator.
+Eigen::MatrixXd
+sparse_llt_solver::trace2_lhs(const SparseMatrix<double, 0, int> &A,
+                              unsigned int seed) {
+  if (QU_computed == 0) {
+    ensure_U(seed);
+    QU = solve(U); // K^{-1} U
+    QU_computed = 1;
+  }
+  Eigen::MatrixXd A_QU = A * QU;  // A K^{-1} U
+  return solve(A_QU);             // K^{-1} A K^{-1} U
+}
+
+double sparse_llt_solver::trace2_reduce(const SparseMatrix<double, 0, int> &B,
+                                        const Eigen::MatrixXd &S) const {
+  Eigen::MatrixXd BS = B * S; // n x N_iter
+  double t = 0.0;
+  for (int i = 0; i < N_iter; ++i)
+    t += U.col(i).dot(BS.col(i));
+  return t / static_cast<double>(N_iter);
+}
+
 double sparse_llt_solver::trace2(const SparseMatrix<double, 0, int> &A,
                                  const SparseMatrix<double, 0, int> &B,
                                  unsigned int seed) {
@@ -133,20 +180,6 @@ double sparse_llt_solver::trace2(const SparseMatrix<double, 0, int> &A,
 }
 
 
-// ---------------------------------------------------------------------------
-// Selected (Takahashi) inverse.
-//
-// SimplicialLLT factorizes P Q P^T = L L^T, so Q^{-1} = P^T (L L^T)^{-1} P.
-// Writing L = Ltil * diag(L_ii) with Ltil unit-diagonal and D_ii = L_ii^2, the
-// entries of B = (L L^T)^{-1} on the pattern of L satisfy, sweeping i upwards
-// from the last column,
-//     B_ij = delta_ij / D_ii - sum_{k>i, Ltil_ki != 0} Ltil_ki * B_kj.
-// Only entries inside pattern(L) are produced; anything outside is genuinely
-// unavailable, which is why selinv_trace() reports failure rather than
-// silently treating a miss as zero.
-// ---------------------------------------------------------------------------
-// Factorize privately (once per compute()) so the selected inverse is
-// available whatever backend the caller chose.
 bool sparse_llt_solver::ensure_selinv_factor() {
   if (!selinv_supported())
     return false;
@@ -185,64 +218,83 @@ bool sparse_llt_solver::build_selinv() {
   if (!ensure_selinv_factor())
     return false;
 
-  Eigen::SparseMatrix<double, 0, int> L(
-      solver_type == 0 ? Eigen::SparseMatrix<double, 0, int>(R_eigen.matrixL())
-                       : Eigen::SparseMatrix<double, 0, int>(selinv_llt->matrixL()));
-  Eigen::VectorXd D(n);
-  for (int j = 0; j < n; ++j) {
-    double d = L.coeff(j, j);
-    if (!(d > 0.0))
-      return false;
-    D(j) = d * d;
-  }
-  for (int j = 0; j < n; ++j) {
-    double d = std::sqrt(D(j));
-    for (Eigen::SparseMatrix<double, 0, int>::InnerIterator it(L, j); it; ++it)
-      it.valueRef() /= d;
-  }
+  // The factor's own CSC arrays, read in place. Nothing is copied and nothing
+  // is rescaled: Ltil_{rj} = L_{rj}/L_{jj} and D_j = L_{jj}^2 are formed on the
+  // fly, which removes both a full copy of the factor and a pass over it.
+  const Eigen::SparseMatrix<double, 0, int> &L =
+      solver_type == 0 ? R_eigen.matrixL().nestedExpression()
+                       : selinv_llt->matrixL().nestedExpression();
+  if (L.rows() != n || L.cols() != n || !L.isCompressed())
+    return false;
+  const int *Lp = L.outerIndexPtr();
+  const int *Li = L.innerIndexPtr();
+  const double *Lx = L.valuePtr();
 
-  std::vector<std::vector<std::pair<int, double>>> cols(n);
+  // The selected inverse is stored FLAT, sharing L's pattern exactly, so
+  // Z(r, c) for r >= c is z[q] at the same offset q that holds L(r, c). That
+  // replaces a vector-of-vectors (one heap allocation per column) and lets the
+  // final matrix be built by copying L's structure once instead of sorting a
+  // triplet array of the whole factor.
+  std::vector<double> z(static_cast<size_t>(L.nonZeros()), 0.0);
+  // Dense scatter workspaces: pos maps a row of the current column to its slot,
+  // lj holds that row's Ltil value. Both turn what used to be a search per
+  // access into an array index.
+  std::vector<int> pos(n, -1);
+  std::vector<double> lj(n, 0.0);
+  std::vector<double> acc;
+
   for (int j = n - 1; j >= 0; --j) {
-    std::vector<int> rows;
-    for (Eigen::SparseMatrix<double, 0, int>::InnerIterator it(L, j); it; ++it)
-      if (it.row() > j)
-        rows.push_back((int)it.row());
-    auto Bget = [&](int a, int b) -> double {
-      int hi = a > b ? a : b, lo = a > b ? b : a;
-      for (size_t q = 0; q < cols[lo].size(); ++q)
-        if (cols[lo][q].first == hi)
-          return cols[lo][q].second;
-      return 0.0;
-    };
-    for (int t = (int)rows.size() - 1; t >= 0; --t) {
-      int i = rows[t];
-      double acc = 0.0;
-      for (Eigen::SparseMatrix<double, 0, int>::InnerIterator it(L, j); it; ++it) {
-        int k = (int)it.row();
-        if (k <= j)
+    const int start = Lp[j], end = Lp[j + 1];
+    // Lower-triangular with sorted indices puts the diagonal first. Everything
+    // below indexes on that, so check rather than assume.
+    if (start >= end || Li[start] != j)
+      return false;
+    const double Ljj = Lx[start];
+    if (!(Ljj > 0.0))
+      return false;
+    const int m = end - start - 1;
+
+    for (int t = 0; t < m; ++t) {
+      const int r = Li[start + 1 + t];
+      pos[r] = t;
+      lj[r] = Lx[start + 1 + t] / Ljj;
+    }
+    acc.assign(m, 0.0);
+
+    // acc[a] accumulates -sum_k Ltil_{k,j} Z(r_a, k) over k in this column's
+    // rows. Walking column c yields Z(r, c) for r >= c, and that single value
+    // serves BOTH the (i = r, k = c) term and the (i = c, k = r) term -- so one
+    // pass over the already-computed columns covers every pair, with no search.
+    for (int b = 0; b < m; ++b) {
+      const int c = Li[start + 1 + b];
+      const double lc = lj[c];
+      for (int q = Lp[c]; q < Lp[c + 1]; ++q) {
+        const int a = pos[Li[q]];
+        if (a < 0)
           continue;
-        acc += it.value() * Bget(i, k);
+        const double v = z[q];
+        acc[a] -= lc * v;
+        if (Li[q] != c)
+          acc[b] -= lj[Li[q]] * v;
       }
-      cols[j].push_back(std::make_pair(i, -acc));
     }
+
     double accd = 0.0;
-    for (Eigen::SparseMatrix<double, 0, int>::InnerIterator it(L, j); it; ++it) {
-      int k = (int)it.row();
-      if (k <= j)
-        continue;
-      accd += it.value() * Bget(k, j);
+    for (int t = 0; t < m; ++t) {
+      z[start + 1 + t] = acc[t];
+      accd += lj[Li[start + 1 + t]] * acc[t];
     }
-    cols[j].push_back(std::make_pair(j, 1.0 / D(j) - accd));
+    z[start] = 1.0 / (Ljj * Ljj) - accd;
+
+    for (int t = 0; t < m; ++t) {
+      const int r = Li[start + 1 + t];
+      pos[r] = -1;
+      lj[r] = 0.0;
+    }
   }
 
-  std::vector<Eigen::Triplet<double>> trips;
-  for (int j = 0; j < n; ++j)
-    for (size_t q = 0; q < cols[j].size(); ++q)
-      trips.push_back(Eigen::Triplet<double>(cols[j][q].first, j, cols[j][q].second));
-  Eigen::SparseMatrix<double, 0, int> S(n, n);
-  S.setFromTriplets(trips.begin(), trips.end());
-  S.makeCompressed();
-  S_sel = S;
+  S_sel = L; // pattern; values overwritten below
+  std::copy(z.begin(), z.end(), S_sel.valuePtr());
   S_sel_ready = true;
   return true;
 }

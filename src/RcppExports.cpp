@@ -91,6 +91,41 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// group_cv_cpp
+Rcpp::List group_cv_cpp(const Rcpp::List& ngme_replicates, const Rcpp::List& groups_per_rep, int n, int n_burnin, unsigned long seed, int num_threads, int chunk_cols);
+RcppExport SEXP _ngme2_group_cv_cpp(SEXP ngme_replicatesSEXP, SEXP groups_per_repSEXP, SEXP nSEXP, SEXP n_burninSEXP, SEXP seedSEXP, SEXP num_threadsSEXP, SEXP chunk_colsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type ngme_replicates(ngme_replicatesSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type groups_per_rep(groups_per_repSEXP);
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< int >::type n_burnin(n_burninSEXP);
+    Rcpp::traits::input_parameter< unsigned long >::type seed(seedSEXP);
+    Rcpp::traits::input_parameter< int >::type num_threads(num_threadsSEXP);
+    Rcpp::traits::input_parameter< int >::type chunk_cols(chunk_colsSEXP);
+    rcpp_result_gen = Rcpp::wrap(group_cv_cpp(ngme_replicates, groups_per_rep, n, n_burnin, seed, num_threads, chunk_cols));
+    return rcpp_result_gen;
+END_RCPP
+}
+// group_cv_exact_cpp
+Rcpp::List group_cv_exact_cpp(const Rcpp::List& ngme_replicates, const Rcpp::List& groups_per_rep, int n, int n_burnin, unsigned long seed, int num_threads, int n_chains, const Rcpp::List& chain_starts);
+RcppExport SEXP _ngme2_group_cv_exact_cpp(SEXP ngme_replicatesSEXP, SEXP groups_per_repSEXP, SEXP nSEXP, SEXP n_burninSEXP, SEXP seedSEXP, SEXP num_threadsSEXP, SEXP n_chainsSEXP, SEXP chain_startsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type ngme_replicates(ngme_replicatesSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type groups_per_rep(groups_per_repSEXP);
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< int >::type n_burnin(n_burninSEXP);
+    Rcpp::traits::input_parameter< unsigned long >::type seed(seedSEXP);
+    Rcpp::traits::input_parameter< int >::type num_threads(num_threadsSEXP);
+    Rcpp::traits::input_parameter< int >::type n_chains(n_chainsSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::List& >::type chain_starts(chain_startsSEXP);
+    rcpp_result_gen = Rcpp::wrap(group_cv_exact_cpp(ngme_replicates, groups_per_rep, n, n_burnin, seed, num_threads, n_chains, chain_starts));
+    return rcpp_result_gen;
+END_RCPP
+}
 // compute_log_like_cpp
 double compute_log_like_cpp(const Rcpp::List& R_ngme);
 RcppExport SEXP _ngme2_compute_log_like_cpp(SEXP R_ngmeSEXP) {
@@ -125,6 +160,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ngme2_factorization_timing", (DL_FUNC) &_ngme2_factorization_timing, 1},
     {"_ngme2_has_pardiso", (DL_FUNC) &_ngme2_has_pardiso, 0},
     {"_ngme2_ngme_factor_counters", (DL_FUNC) &_ngme2_ngme_factor_counters, 1},
+    {"_ngme2_group_cv_cpp", (DL_FUNC) &_ngme2_group_cv_cpp, 7},
+    {"_ngme2_group_cv_exact_cpp", (DL_FUNC) &_ngme2_group_cv_exact_cpp, 8},
     {"_ngme2_compute_log_like_cpp", (DL_FUNC) &_ngme2_compute_log_like_cpp, 1},
     {"_ngme2_rGIG_cpp", (DL_FUNC) &_ngme2_rGIG_cpp, 4},
     {NULL, NULL, 0}

@@ -467,6 +467,118 @@ void BlockModel::setPrevV(const VectorXd &V) {
 }
 
 // sample W|VY
+void BlockModel::snapshot_state() {
+  snap_W.clear(); snap_V.clear();
+  snap_W.reserve(n_latent); snap_V.reserve(n_latent);
+  for (int li = 0; li < n_latent; ++li) {
+    snap_W.push_back(latents[li]->getW());
+    snap_V.push_back(latents[li]->getV());
+  }
+  snap_noise_V = noise_V;
+  snap_taken = true;
+}
+
+void BlockModel::restore_state() {
+  if (!snap_taken)
+    return;
+  for (int li = 0; li < n_latent; ++li) {
+    latents[li]->setW(snap_W[li]);
+    latents[li]->setV(snap_V[li]);
+  }
+  noise_V = snap_noise_V;
+  invalidate_QQ();
+  invalidate_measurement();
+}
+
+// ---- exact leave-group-out support ----
+//
+// Dropping observations by zeroing their measurement precision is exact: the
+// likelihood contribution of observation j enters QQ only through H'H with
+// H = sqrt(D) AZ, and M only through (AZ)' D r, so D_j = 0 removes it from
+// both. The latent block, the operator and the symbolic factorisation are
+// untouched, and removing rows can only shrink QQ's pattern, never grow it.
+void BlockModel::set_obs_mask(const std::vector<int> &drop) {
+  obs_weight = VectorXd::Ones(n_obs);
+  for (int idx : drop) {
+    if (idx < 0 || idx >= n_obs)
+      throw std::runtime_error("set_obs_mask(): index out of range");
+    obs_weight(idx) = 0.0;
+  }
+  invalidate_measurement();
+}
+
+void BlockModel::clear_obs_mask() {
+  if (obs_weight.size() == n_obs && obs_weight.isApprox(VectorXd::Ones(n_obs)))
+    return;
+  obs_weight = VectorXd::Ones(n_obs);
+  invalidate_measurement();
+}
+
+// One exact leave-group-out chain, equivalent to what cross_validation() runs
+// per fold but without leaving C++ or rebuilding the model.
+void BlockModel::loo_chain(const std::vector<int> &drop, int n, int n_burnin,
+                           std::vector<double> &out_eta,
+                           const VectorXd *start_W) {
+  const int k = (int)drop.size();
+  out_eta.assign((size_t)k * n, 0.0);
+  if (n_latent == 0)
+    return;
+
+  set_obs_mask(drop);
+  // Start every fold from the state the model was BUILT with -- for a fitted
+  // object, the W and V estimation left behind. Resetting to the prior instead
+  // (W = 0, V drawn from its prior) was measurably worse: it is far from the
+  // fold's posterior, so it needs much more burn-in, and it is a worse start
+  // than cross_validation() gets, since a freshly constructed BlockModel keeps
+  // the fitted W. Restoring a snapshot keeps folds identical and independent of
+  // the order they run in, which inheriting the previous fold's state would not.
+  restore_state();
+  if (start_W != nullptr && start_W->size() == W_sizes) {
+    setW(*start_W);
+    invalidate_QQ();
+  }
+
+  rao_blackwell = false;
+  if (!all_gaussian)
+    burn_in(n_burnin);
+  else
+    for (int i = 0; i < n_burnin; ++i)
+      sampleW_VY(true);
+
+  // AZ is column-major, so AZ.row(i) has to walk every column: using it inside
+  // the draw loop costs O(nnz(AZ)) per held-out observation per draw instead of
+  // O(nnz of that row). Extract the k rows we need with ONE pass over AZ, then
+  // the per-draw work is k short dot products. (group_cv_raw() builds the same
+  // index for the same reason.)
+  const SparseMatrix<double> &AZ = get_AZ();
+  std::vector<int> row_of(n_obs, -1);
+  for (int i = 0; i < k; ++i)
+    row_of[drop[i]] = i;
+  std::vector<std::vector<std::pair<int, double>>> rows(k);
+  for (int c = 0; c < AZ.outerSize(); ++c)
+    for (SparseMatrix<double>::InnerIterator it(AZ, c); it; ++it) {
+      const int r = row_of[it.row()];
+      if (r >= 0)
+        rows[r].emplace_back((int)c, it.value());
+    }
+
+  for (int it = 0; it < n; ++it) {
+    if (!all_gaussian)
+      sample_cond_V();
+    sampleW_VY();
+    sample_cond_noise_V(true);
+    const VectorXd W = getW();
+    const double *wp = W.data();
+    for (int i = 0; i < k; ++i) {
+      double acc = 0.0;
+      for (const auto &e : rows[i])
+        acc += e.second * wp[e.first];
+      out_eta[(size_t)k * it + i] = acc;
+    }
+  }
+  clear_obs_mask();
+}
+
 void BlockModel::sampleW_VY(bool burn_in) {
   ngme_timing::Scope _sw(ngme_timing::samplew_us());
   if (n_latent == 0)
@@ -488,12 +600,8 @@ void BlockModel::sampleW_VY(bool burn_in) {
 
   const SparseMatrix<double> &AZ = get_AZ();
   if (!corr_measure) {
-    M += AZ.transpose() * (noise_sigma.array()
-                               .pow(-2)
-                               .matrix()
-                               .cwiseQuotient(noise_V)
-                               .asDiagonal() *
-                           get_residual_part());
+    M += AZ.transpose() *
+         (meas_prec().asDiagonal() * get_residual_part());
   } else {
     M += AZ.transpose() * (Q_eps * get_residual_part());
   }
@@ -1873,10 +1981,7 @@ const SparseMatrix<double> &BlockModel::get_AZ() const {
 const SparseMatrix<double> &BlockModel::get_sqrt_AtSVA() const {
   if (sqrt_AtSVA_valid && !ngme_counters::cache_disabled())
     return sqrt_AtSVA_cached;
-  VectorXd inv_noise_SV =
-      noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
-
-  const VectorXd sqrt_inv_noise_SV = inv_noise_SV.cwiseSqrt();
+  const VectorXd sqrt_inv_noise_SV = meas_prec().cwiseSqrt();
   const SparseMatrix<double> &AZ = get_AZ();
   if (!corr_measure) {
     sqrt_AtSVA_cached = sqrt_inv_noise_SV.asDiagonal() * AZ;

@@ -87,6 +87,17 @@ protected:
 
   SparseMatrix<double> A, K, Q, QQ, pmat, pmat_inv;
 
+  // Per-observation weight on the MEASUREMENT precision, all ones normally.
+  // Zeroing an entry removes that observation from QQ and from M exactly, which
+  // is how the exact leave-group-out chains drop a fold without rebuilding the
+  // model: the latent block, the operator and the symbolic factorisation are
+  // untouched, and dropping rows can only shrink QQ's pattern.
+  VectorXd obs_weight;
+  // Saved initial state; see snapshot_state().
+  std::vector<VectorXd> snap_W, snap_V;
+  VectorXd snap_noise_V;
+  bool snap_taken{false};
+
   vector<std::shared_ptr<Latent>> latents;
   VectorXd p_vec, a_vec, b_vec, noise_V, noise_prevV;
   // double nu {1};
@@ -454,6 +465,16 @@ public:
   }
 
   // residual_part = Y - X beta - (1 - V) mu
+  // noise_sigma^-2 / noise_V, with dropped observations zeroed. Every use of
+  // the measurement precision during sampling goes through here.
+  VectorXd meas_prec() const {
+    VectorXd p =
+        noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
+    if (obs_weight.size() == p.size())
+      p = p.cwiseProduct(obs_weight);
+    return p;
+  }
+
   VectorXd get_residual_part() const {
     return Y - X * beta -
            (-VectorXd::Ones(n_obs) + noise_V).cwiseProduct(noise_mu);
@@ -493,6 +514,62 @@ public:
   Rcpp::List sampling(int n, int n_burnin, bool posterior) {
     return sampling(n, n_burnin, posterior, A);
   }
+
+  // Leave-group-out cross-validation along a SINGLE full-data Gibbs chain.
+  //
+  // For every retained draw and every group I this records the mean and
+  // covariance of eta_I = (AZ W)_I under p(W | y_-I, V), obtained by a
+  // rank-|I| downdate of the QQ factor that sampleW_VY() has just built --
+  // no refactorization, and no separate chain per group.
+  //
+  // Both quantities are free of the group's OWN measurement mixing variable:
+  // the downdate removes exactly the term that carried it, so
+  // QQ_-I = QQ - A_I' S_I^-1 A_I and b_-I = b - A_I' S_I^-1 r_I no longer
+  // depend on noise_V_I. The caller therefore marginalises noise_V_I over its
+  // prior when forming the predictive and the importance weight.
+  //
+  // `groups` holds 0-based observation indices. `chunk_cols` bounds the width
+  // of the dense right-hand side handed to the solver at once. Results go into
+  // plain C++ buffers -- out_mean[g] is k x n and out_cov[g] is the packed
+  // lower triangle, k(k+1)/2 x n, both column-major by draw -- so that this can
+  // run off the main thread, where no R object may be allocated.
+  // The (W, V, noise_V) the model was constructed with -- for a fitted object
+  // that is the state estimation left behind, which is far closer to each
+  // fold's posterior than the prior is. Saved once and restored before every
+  // fold, so folds start identically regardless of the order (or the thread)
+  // they run in.
+  void snapshot_state();
+  void restore_state();
+
+  // Drop observations (0-based) from the likelihood by zeroing their
+  // measurement precision; clear_obs_mask() restores them.
+  void set_obs_mask(const std::vector<int> &drop);
+  void clear_obs_mask();
+  // Seeds the block AND every latent's own stream. Seeding only the block
+  // left each latent carrying state from whatever chain the worker ran before,
+  // so a fold's draws depended on how the parallel loop was scheduled.
+  void reseed(unsigned long seed) {
+    rng.seed(seed);
+    for (size_t i = 0; i < latents.size(); ++i)
+      latents[i]->reseed(seed + 7919UL * (unsigned long)(i + 1));
+  }
+
+  // One exact leave-group-out chain: mask the group out, run the sampler, and
+  // record eta_I = (AZ W)_I for every retained draw. This is what
+  // cross_validation() does per fold, without leaving C++ or rebuilding the
+  // model. `out_eta` is |I| x n, column-major by draw.
+  // `start_W` overrides the snapshot's W for this chain. Passing a DIFFERENT
+  // one per chain (the per-chain states the fit already stored) is what makes
+  // the between-chain spread a real convergence signal: chains started from the
+  // same point can agree while all being stuck.
+  void loo_chain(const std::vector<int> &drop, int n, int n_burnin,
+                 std::vector<double> &out_eta,
+                 const VectorXd *start_W = nullptr);
+
+  void group_cv_raw(const std::vector<std::vector<int>> &groups, int n,
+                    int n_burnin, int chunk_cols, bool allow_inner_threads,
+                    std::vector<std::vector<double>> &out_mean,
+                    std::vector<std::vector<double>> &out_cov);
 
   Rcpp::List output() const;
   std::vector<std::string> get_par_names() const { return par_names; }

@@ -232,6 +232,14 @@ public:
         prevV = V;
         invalidate_derivatives();
     }
+    // Restore a saved V (see BlockModel::snapshot_state), so that every
+    // leave-group-out fold can start from the same state the model was built
+    // with instead of drifting with fold order.
+    void setV(const VectorXd& V_new) {
+        V = V_new;
+        prevV = V_new;
+        invalidate_derivatives();
+    }
 
     void update_each_iter(bool need_precond = false);
     void sample_cond_V();
@@ -291,6 +299,7 @@ public:
     /* 4 for optimizer */
     const VectorXd get_parameter();
     const VectorXd get_grad();
+    void           reseed(unsigned long seed) { latent_rng.seed(seed); }
     void           compute_grad_and_hessian(bool rao_blackwell, bool with_precond);
     void           set_parameter_and_update(const VectorXd&, bool with_precond);
     void           finishOpt(int i) {fix_flag[i] = 0; }

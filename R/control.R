@@ -130,6 +130,10 @@
 #'   which uses \code{stationarity_ratio_lim}.
 #' @param polish_floor_frac lower bound on the polish step, as a fraction of
 #'   the step the polish starts from (default 0.25).
+#' @param trace_adapt_k whether \code{trace_adapt} also retunes the probe budget
+#'   used for the operator traces, which enter the gradient of the operator
+#'   parameters. Without it only the budget for the block precision is retuned
+#'   and the operator keeps the budget it was built with. Off by default.
 #' @param stationarity_ratio_lim how far a parameter may move between the two
 #'   halves of the window, as a multiple of \code{se_stat} (default 1.0).
 #' @param stationarity_dir_lim a parameter failing the magnitude test is called a
@@ -239,7 +243,7 @@ control_opt <- function(
     standardize_fixed = TRUE,
     n_batch = 10,
     iters_per_check = iterations / n_batch,
-    optimizer = adam(),
+    optimizer = precond_sgd(),
     start = NULL,
     start_sd = 0.5,
     # parallel options
@@ -262,6 +266,7 @@ control_opt <- function(
     trace_adapt_every = 100L,
     trace_adapt_min = 5L,
     trace_adapt_max = 200L,
+    trace_adapt_k = FALSE,
     sampling_strategy = "all",
     solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
     solver_type = "llt",
@@ -525,11 +530,11 @@ control_opt <- function(
     trace_adapt_every = trace_adapt_every,
     trace_adapt_min = trace_adapt_min,
     trace_adapt_max = trace_adapt_max,
+    trace_adapt_k = trace_adapt_k,
     print_check_info = print_check_info,
     verbose = verbose,
     store_traj = store_traj,
-    sampling_strategy = which(strategy_list == sampling_strategy) - 1, # start from 0,
-
+    sampling_strategy = which(strategy_list == sampling_strategy) - 1, # start from 0
     max_relative_step = max_relative_step,
     max_absolute_step = max_absolute_step,
     step_clip_mode = match(step_clip, c("value", "norm", "adaptive")) - 1L,
@@ -741,6 +746,7 @@ update_control_ngme <- function(control_ngme, control_opt) {
   control_ngme$trace_adapt_every <- control_opt$trace_adapt_every
   control_ngme$trace_adapt_min <- control_opt$trace_adapt_min
   control_ngme$trace_adapt_max <- control_opt$trace_adapt_max
+  control_ngme$trace_adapt_k <- control_opt$trace_adapt_k
   control_ngme$stepsize <- control_opt$stepsize
   control_ngme$solver_backend <- control_opt$solver_backend
   control_ngme$solver_factor <- control_opt$solver_factor

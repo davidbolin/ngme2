@@ -18,12 +18,36 @@
 
 using std::pow;
 
+namespace {
+// theta_sigma keeps every column of B_sigma, but the optimizer carries only the
+// unfixed components and every gradient and Hessian entry is indexed by that
+// shorter set. Anything assembled at the full width of B_sigma therefore has to
+// be mapped through this list; taking the leading columns instead is correct
+// only when the free components happen to come first.
+std::vector<int> free_sigma_cols(const std::vector<bool> &fixed, int n_cols) {
+  std::vector<int> free_cols;
+  if ((int)fixed.size() == n_cols) {
+    for (int i = 0; i < n_cols; ++i)
+      if (!fixed[i])
+        free_cols.push_back(i);
+  } else {
+    for (int i = 0; i < n_cols; ++i)
+      free_cols.push_back(i);
+  }
+  return free_cols;
+}
+} // namespace
+
 namespace ngme_counters {
 std::atomic<long long> QQ_builds{0};
+std::atomic<long long> probe_solves{0};
+std::atomic<long long> gibbs_passes{0};
 std::atomic<long long> QQ_analyzes{0};
 std::atomic<long long> K_analyzes{0};
 void reset_all() {
   QQ_builds.store(0, std::memory_order_relaxed);
+  probe_solves.store(0, std::memory_order_relaxed);
+  gibbs_passes.store(0, std::memory_order_relaxed);
   QQ_analyzes.store(0, std::memory_order_relaxed);
   K_analyzes.store(0, std::memory_order_relaxed);
 }
@@ -290,6 +314,8 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
       trace_adapt_min = Rcpp::as<int>(cn["trace_adapt_min"]);
     if (cn.containsElementNamed("trace_adapt_max"))
       trace_adapt_max = Rcpp::as<int>(cn["trace_adapt_max"]);
+    if (cn.containsElementNamed("trace_adapt_k"))
+      trace_adapt_k = Rcpp::as<bool>(cn["trace_adapt_k"]);
     trace_adapt_countdown_ = trace_adapt_every;
   }
 
@@ -1165,6 +1191,14 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
   long long t_build_s_ms = 0, t_set_s_ms = 0, t_dZ_ms = 0, t_grad_ms = 0;
   long long t_prec_latent_ms = 0, t_prec_ZGN_ms = 0, t_prec_merr_ms = 0;
 
+  // Apply any parked operator-side probe budget before anything reads a probe
+  // block, so no cache is left sized for the previous budget.
+  if (pending_k_budget_ > 0) {
+    for (auto &l : latents)
+      l->set_n_trace_iter(pending_k_budget_);
+    pending_k_budget_ = -1;
+  }
+
   bool do_precond = with_precond;
   // Use the eps provided by the caller to keep caches consistent across layers
 
@@ -1178,6 +1212,7 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
   // For non-Gaussian we still need Gibbs over V even if RB is enabled.
   bool rb_all_gauss = (all_gaussian && rao_blackwell);
   int n_pass = rb_all_gauss ? 1 : n_gibbs;
+  ngme_counters::add(ngme_counters::gibbs_passes, n_pass);
   // Use conditional mean of W for building observation score when RB is
   // requested
   bool use_condW = rao_blackwell;
@@ -1548,10 +1583,16 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
             2.0 *
             e.array().square().matrix().cwiseQuotient(
                 noise_sigma.array().square().matrix().cwiseProduct(noise_V));
-        MatrixXd Hsigma = -(B_sigma.transpose() * wsig.asDiagonal() * B_sigma);
+        MatrixXd Hsigma_full =
+            -(B_sigma.transpose() * wsig.asDiagonal() * B_sigma);
+        const std::vector<int> sig_free =
+            free_sigma_cols(fix_theta_sigma_vec, (int)B_sigma.cols());
         // Place H_sigma just after the mu block within measurement corner
-        precond_sum.block(n_la_params + n_theta_mu, n_la_params + n_theta_mu,
-                          n_theta_sigma, n_theta_sigma) += Hsigma;
+        for (int a = 0; a < (int)sig_free.size() && a < n_theta_sigma; ++a)
+          for (int b = 0; b < (int)sig_free.size() && b < n_theta_sigma; ++b)
+            precond_sum(n_la_params + n_theta_mu + a,
+                        n_la_params + n_theta_mu + b) +=
+                Hsigma_full(sig_free[a], sig_free[b]);
         // Cross H_{mu,sigma} = -2 B_mu^T diag(((V-1) ⊙ e) / (sigma^2 V))
         // B_sigma
         if (n_theta_mu > 0 && !fix_flag[block_fix_theta_mu]) {
@@ -1561,11 +1602,14 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
                         .cwiseQuotient(
                             noise_sigma.array().square().matrix().cwiseProduct(
                                 noise_V));
-          MatrixXd Hmu_sigma = -(B_mu.transpose() * wms.asDiagonal() * B_sigma);
-          precond_sum.block(n_la_params + 0, n_la_params + n_theta_mu,
-                            n_theta_mu, n_theta_sigma) += Hmu_sigma;
-          precond_sum.block(n_la_params + n_theta_mu, n_la_params + 0,
-                            n_theta_sigma, n_theta_mu) += Hmu_sigma.transpose();
+          MatrixXd Hmu_sigma_full =
+              -(B_mu.transpose() * wms.asDiagonal() * B_sigma);
+          for (int a = 0; a < (int)sig_free.size() && a < n_theta_sigma; ++a)
+            for (int m = 0; m < n_theta_mu; ++m) {
+              const double v = Hmu_sigma_full(m, sig_free[a]);
+              precond_sum(n_la_params + m, n_la_params + n_theta_mu + a) += v;
+              precond_sum(n_la_params + n_theta_mu + a, n_la_params + m) += v;
+            }
         }
       }
 
@@ -1593,11 +1637,18 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
             2.0 *
             e_sb.cwiseQuotient(
                 noise_sigma.array().square().matrix().cwiseProduct(noise_V));
-        MatrixXd Hsigma_beta = -(B_sigma.transpose() * wsb.asDiagonal() * X);
-        precond_sum.block(n_la_params + n_theta_mu, n_la_params + n_merr,
-                          n_theta_sigma, n_feff) += Hsigma_beta;
-        precond_sum.block(n_la_params + n_merr, n_la_params + n_theta_mu,
-                          n_feff, n_theta_sigma) += Hsigma_beta.transpose();
+        MatrixXd Hsigma_beta_full =
+            -(B_sigma.transpose() * wsb.asDiagonal() * X);
+        const std::vector<int> sb_free =
+            free_sigma_cols(fix_theta_sigma_vec, (int)B_sigma.cols());
+        for (int a = 0; a < (int)sb_free.size() && a < n_theta_sigma; ++a)
+          for (int b = 0; b < n_feff; ++b) {
+            const double v = Hsigma_beta_full(sb_free[a], b);
+            precond_sum(n_la_params + n_theta_mu + a, n_la_params + n_merr + b)
+                += v;
+            precond_sum(n_la_params + n_merr + b, n_la_params + n_theta_mu + a)
+                += v;
+          }
       }
 
       // 1d) Mean parameters -- fixed effects beta and measurement mu -- jointly,
@@ -1842,6 +1893,14 @@ void BlockModel::adapt_trace_probes() {
                   << " -> " << N_new << "\n";
     last_trace_N_ = N_new;
     chol_QQ.set_N_iter(N_new);
+    // The operator-side budget has to move with it. cholK_solver is
+    // initialised once, so a budget left behind here stays at its construction
+    // value for the whole run however far the QQ budget travels -- and those
+    // probes feed the gradient of theta_K directly.
+    // Parked rather than applied: this runs inside the gradient computation,
+    // and the operator's probe block is cached across Gibbs passes.
+    if (trace_adapt_k)
+      pending_k_budget_ = N_new;
     // statistics are exponentially weighted and stay valid across the change
   }
 }
@@ -1960,10 +2019,13 @@ void BlockModel::compute_rb_trace() {
     // theta_sigma
     ngme_timing::Scope *_ss = new ngme_timing::Scope(ngme_timing::rb_sec_sigma_us());
     vector<bool> fix_theta_sigma_vec = latents[i]->get_theta_unfixed_sigma();
-    int pos = 0;
+    // One free component per j, so consecutive fixed components all have to be
+    // stepped over; skipping a single one lands on a fixed column whenever two
+    // fixed components sit together.
+    const std::vector<int> lat_sig_free =
+        free_sigma_cols(fix_theta_sigma_vec, (int)fix_theta_sigma_vec.size());
     for (int j = 0; j < latents[i]->get_n_theta_sigma(); j++) {
-      if (fix_theta_sigma_vec[pos])
-        pos += 1; // find non-fixed theta_sigma position
+      const int pos = (j < (int)lat_sig_free.size()) ? lat_sig_free[j] : j;
 
       // build B_sigma_col_j (consider all latents)
       VectorXd BSigma_col_over_SV = VectorXd::Zero(V_sizes);
@@ -1975,7 +2037,6 @@ void BlockModel::compute_rb_trace() {
         rb_trace_sigma[j] = qq_trace_factored_shared(
             K, BSigma_col_over_SV, K, KQU, have_KQU, pvj);
         pv_sigma[j] = pvj; }
-      pos += 1;
     }
 
     delete _ss;
@@ -2063,14 +2124,19 @@ void BlockModel::compute_rb_trace() {
   // rebuilt only when set_parameter_and_update() invalidates it. Assembling it
   // per j meant recomputing A_i Z_i for every theta_sigma on every Gibbs draw.
   const SparseMatrix<double> &AZ = get_AZ();
+  const std::vector<int> noise_sig_free =
+      free_sigma_cols(fix_theta_sigma_vec, (int)B_sigma.cols());
   for (int j = 0; j < n_theta_sigma; j++) {
+    // The trace is added to the gradient of the j-th FREE theta_sigma, so it
+    // has to be taken against that component's column of B_sigma.
+    const int col_j = (j < (int)noise_sig_free.size()) ? noise_sig_free[j] : j;
     // T = (A Z)^T diag(B_sigma_j / noise_SV) (A Z), but never formed: AZ has
     // n_obs rows, so that triple product is by far the most expensive thing in
     // this function. trace_factored() applies the same three factors to the probe
     // block instead, where nothing bigger than n x N_iter is ever built.
     { double pvj = 0.0;
       rb_trace_noise_sigma[j] = qq_trace_factored(
-          AZ, B_sigma.col(j).cwiseQuotient(noise_SV), AZ, pvj);
+          AZ, B_sigma.col(col_j).cwiseQuotient(noise_SV), AZ, pvj);
       if (rb_probe_var_noise_sigma.size() != n_theta_sigma)
         rb_probe_var_noise_sigma = VectorXd::Zero(n_theta_sigma);
       rb_probe_var_noise_sigma[j] = pvj; }

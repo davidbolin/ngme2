@@ -1,3 +1,4 @@
+#include "../include/factor_counters.h"
 #include "../include/solver.h"
 #include "../include/phase_timing.h"
 #include <algorithm>
@@ -61,6 +62,7 @@ void sparse_llt_solver::ensure_QU(unsigned int seed) {
     return;
   ensure_U(seed);
   { ngme_timing::Scope _s(ngme_timing::rb_qu_solve_us()); QU = solve(U); }
+  ngme_counters::add(ngme_counters::probe_solves, N_iter);
   QU_computed = 1;
 }
 

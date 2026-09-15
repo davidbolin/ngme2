@@ -19,6 +19,20 @@ extern std::atomic<long long> QQ_builds;    // QQ assembled + numerically factor
 extern std::atomic<long long> QQ_analyzes;  // symbolic phase for QQ
 extern std::atomic<long long> K_analyzes;   // symbolic phase for a latent operator K
 
+// Work actually performed, as opposed to time taken. Wall clock is not a
+// property of the fit: it moves with machine load, other processes and CPU
+// throttling, so two runs of the same code are not comparable by it. These two
+// counters, together with the factorization counts above, are: the cost of an
+// iteration is a fixed part plus a part linear in each of them, with
+// coefficients that are constant for a given model and data, so the counts are
+// directly comparable between runs however the machine behaved.
+extern std::atomic<long long> probe_solves; // probe columns solved against QQ
+extern std::atomic<long long> gibbs_passes; // Gibbs sweeps in the gradient
+
+inline void add(std::atomic<long long> &c, long long n) {
+  c.fetch_add(n, std::memory_order_relaxed);
+}
+
 inline void bump(std::atomic<long long> &c) {
   c.fetch_add(1, std::memory_order_relaxed);
 }

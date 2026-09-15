@@ -12,7 +12,7 @@ control_opt(
   standardize_fixed = TRUE,
   n_batch = 10,
   iters_per_check = iterations/n_batch,
-  optimizer = adam(),
+  optimizer = precond_sgd(),
   start = NULL,
   start_sd = 0.5,
   n_parallel_chain = 4,
@@ -34,6 +34,7 @@ control_opt(
   trace_adapt_every = 100L,
   trace_adapt_min = 5L,
   trace_adapt_max = 200L,
+  trace_adapt_k = FALSE,
   sampling_strategy = "all",
   solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
   solver_type = "llt",
@@ -181,6 +182,11 @@ budget approaches its target over several updates rather than jumping.}
 \item{trace_adapt_every}{how many iterations between probe-budget updates.}
 
 \item{trace_adapt_min, trace_adapt_max}{bounds on the adapted probe count.}
+
+\item{trace_adapt_k}{whether \code{trace_adapt} also retunes the probe budget
+used for the operator traces, which enter the gradient of the operator
+parameters. Without it only the budget for the block precision is retuned
+and the operator keeps the budget it was built with. Off by default.}
 
 \item{sampling_strategy}{subsampling method of replicates of model, c("all", "ws")
 "all" means using all replicates in each iteration,

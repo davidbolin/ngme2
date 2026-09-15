@@ -128,6 +128,17 @@ protected:
   bool trace_adapt{false};
   double trace_adapt_frac{0.1};
   int trace_adapt_every{50}, trace_adapt_min{5}, trace_adapt_max{200};
+  // The operator-side probe block is resized by set_N_iter, and the trace code
+  // caches a factored probe block across Gibbs passes. Changing the budget in
+  // the middle of a gradient computation therefore leaves that cache sized for
+  // the old budget. The new value is parked here and applied at the top of the
+  // next computation, where nothing is in flight.
+  int pending_k_budget_{-1};
+  // Whether trace_adapt also moves the operator-side probe budget. The two were
+  // never in step: the QQ budget is adapted while the operator's is fixed at its
+  // construction value, although both feed the gradient. Off by default, so the
+  // adaptation behaves as before unless asked otherwise.
+  bool trace_adapt_k{false};
   // Store per-latent RB trace terms at Block level
   std::vector<Eigen::VectorXd> rb_trace_K_latent;
   std::vector<Eigen::VectorXd> rb_trace_sigma_latent;

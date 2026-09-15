@@ -2048,7 +2048,11 @@ Rcpp::List ngme_factor_counters(bool reset = false) {
       Rcpp::Named("QQ_analyzes") = static_cast<double>(
           ngme_counters::QQ_analyzes.load(std::memory_order_relaxed)),
       Rcpp::Named("K_analyzes") = static_cast<double>(
-          ngme_counters::K_analyzes.load(std::memory_order_relaxed)));
+          ngme_counters::K_analyzes.load(std::memory_order_relaxed)),
+      Rcpp::Named("probe_solves") = static_cast<double>(
+          ngme_counters::probe_solves.load(std::memory_order_relaxed)),
+      Rcpp::Named("gibbs_passes") = static_cast<double>(
+          ngme_counters::gibbs_passes.load(std::memory_order_relaxed)));
   if (reset)
     ngme_counters::reset_all();
   return out;

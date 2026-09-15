@@ -181,6 +181,10 @@ public:
       return nig_std_active() ? nig_std_jacobian() : MatrixXd();
     }
     int get_n_theta_K() const          {return n_theta_K; }
+    // Operator-side Hutchinson budget. The operator initialises its own solver
+    // once, so a budget changed after that is picked up through the update
+    // options rather than at initialisation.
+    void set_n_trace_iter(int N) { n_trace_iter_ = N; }
     int get_n_theta_sigma() const      {return n_theta_sigma; }
     int get_n_theta_mu() const         {return n_theta_mu; }
     int get_n_theta_nu() const         {return n_theta_nu; }

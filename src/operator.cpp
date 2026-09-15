@@ -443,6 +443,13 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
     cholK_solver.init(K.rows(), opts.n_trace_iter, symmetric, opts.solver_type,
                       opts.nonsym_solver);
     llt_inited = true;
+  } else if (opts.n_trace_iter > 0 &&
+             cholK_solver.get_N_iter() != opts.n_trace_iter) {
+    // The budget is initialised once but may be driven at run time. Picking it
+    // up here, before any trace is taken, keeps the operator-side probe count
+    // in step with the caller instead of frozen at its construction value --
+    // and these probes feed the gradient of the operator parameters directly.
+    cholK_solver.set_N_iter(opts.n_trace_iter);
   }
   // Storage must be packed before the pattern can be compared (and before the
   // solvers see it).

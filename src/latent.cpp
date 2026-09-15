@@ -195,6 +195,13 @@ Latent::Latent(const Rcpp::List &model_list, unsigned long seed)
   robust_ = model_list.containsElementNamed("robust")
                 ? Rcpp::as<bool>(model_list["robust"])
                 : false;
+  // Coordinates the optimiser works in for stationary NIG noise. The block
+  // passes the setting down with the rest of the per-latent options; without
+  // this read the mode stayed at its default and the reparameterisation could
+  // never engage.
+  nig_param_mode_ = model_list.containsElementNamed("nig_param_std")
+                        ? Rcpp::as<int>(model_list["nig_param_std"])
+                        : 0;
 
   // build mu, sigma, compute trace, ...
   update_each_iter(true);
@@ -952,6 +959,24 @@ void Latent::compute_hessian_blocks(bool rao_blackwell) {
     hess_cache.H_mu_sigma = MatrixXd::Zero(n_theta_mu, n_theta_sigma);
   }
 
+  // theta_sigma keeps every component of B_sigma, but the optimizer carries
+  // only the unfixed ones, and the gradient is compressed to those. The
+  // sigma-side Hessian blocks are naturally assembled at the full width of
+  // B_sigma, so they have to be compressed to the same set. Without this they
+  // are silently cut down to their leading corner when they are written into
+  // the preconditioner, which is the wrong curvature unless the free
+  // components happen to come first.
+  std::vector<int> sigma_free;
+  if ((int)fix_theta_sigma_vec.size() == (int)B_sigma.cols()) {
+    for (int i = 0; i < (int)fix_theta_sigma_vec.size(); ++i)
+      if (!fix_theta_sigma_vec[i])
+        sigma_free.push_back(i);
+  } else {
+    for (int i = 0; i < (int)B_sigma.cols(); ++i)
+      sigma_free.push_back(i);
+  }
+  const int n_sigma_free = (int)sigma_free.size();
+
   // Common terms
   VectorXd Dinv =
       (sigma.array().square().matrix().cwiseProduct(V)).cwiseInverse();
@@ -1005,8 +1030,9 @@ void Latent::compute_hessian_blocks(bool rao_blackwell) {
     hess_cache.H_K_sigma.setZero(n_theta_K, n_theta_sigma);
     for (int j = 0; j < n_theta_K; ++j) {
       VectorXd z = r.cwiseProduct(Dinv).cwiseProduct(KjW[j]); // n x 1
-      VectorXd row = 2.0 * B_sigma.transpose() * z;        // n_theta_sigma x 1
-      hess_cache.H_K_sigma.row(j) = row.transpose();
+      VectorXd row = 2.0 * B_sigma.transpose() * z;  // full B_sigma width
+      for (int i = 0; i < n_sigma_free && i < n_theta_sigma; ++i)
+        hess_cache.H_K_sigma(j, i) = row(sigma_free[i]);
     }
   }
 
@@ -1020,7 +1046,12 @@ void Latent::compute_hessian_blocks(bool rao_blackwell) {
   // H_sigma: - B_sigma^T diag( 2 (r.^2) / (sigma^2 V) ) B_sigma
   if (n_theta_sigma > 0) {
     VectorXd wsig = 2.0 * r.array().square().matrix().cwiseProduct(Dinv);
-    hess_cache.H_sigma = -(B_sigma.transpose() * wsig.asDiagonal() * B_sigma);
+    MatrixXd H_sigma_full =
+        -(B_sigma.transpose() * wsig.asDiagonal() * B_sigma);
+    hess_cache.H_sigma = MatrixXd::Zero(n_theta_sigma, n_theta_sigma);
+    for (int a = 0; a < n_sigma_free && a < n_theta_sigma; ++a)
+      for (int b = 0; b < n_sigma_free && b < n_theta_sigma; ++b)
+        hess_cache.H_sigma(a, b) = H_sigma_full(sigma_free[a], sigma_free[b]);
   }
 
   // H_mu_sigma cross: -2 B_sigma^T diag( (Kz ⊙ (V-h)) / (σ^2 ⊙ V) ) B_mu
@@ -1029,7 +1060,9 @@ void Latent::compute_hessian_blocks(bool rao_blackwell) {
     // The provided form is d^2/d(theta_sigma d theta_mu^T) = -2 B_sigma^T
     // diag(...) B_mu Our cache stores mu x sigma; so take transpose
     MatrixXd H_sigma_mu = -(B_sigma.transpose() * wms.asDiagonal() * B_mu);
-    hess_cache.H_mu_sigma = H_sigma_mu.transpose(); // (mu x sigma)
+    hess_cache.H_mu_sigma = MatrixXd::Zero(n_theta_mu, n_theta_sigma);
+    for (int a = 0; a < n_sigma_free && a < n_theta_sigma; ++a)
+      hess_cache.H_mu_sigma.col(a) = H_sigma_mu.row(sigma_free[a]).transpose();
   }
   // H_nu: NIG prior contribution (no cross terms)
   if (n_theta_nu > 0 && !fix_flag[latent_fix_theta_nu]) {

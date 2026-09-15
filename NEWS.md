@@ -1,5 +1,27 @@
 # ngme2 (development version)
 
+* Fix the gradient of the fixed effects under non-Gaussian measurement noise. It
+  weighted observations by `V / sigma^2` instead of `1 / (sigma^2 V)`, and
+  ignored the correlation of correlated measurement noise, biasing the
+  fixed-effect estimates.
+* Fix parameter names being out of order: `par_names`, the convergence messages
+  and `attr(fit, "conv_diag")` gave the measurement-noise parameters and the
+  fixed effects each other's names.
+* Fix the cap on the measurement noise `nu`, which set `log(nu)` to `1e4`
+  instead of `log(1e4)`.
+* `precond_sgd()`: the preconditioner for the fixed effects and the measurement
+  noise `mu` now integrates out the latent field, instead of using the
+  complete-data curvature, which overstated it many times over under a
+  correlated field. 
+* `precond_sgd()` uses the marginal Fisher information for the `sigma` of
+  non-Gaussian measurement noise, which lets NIG measurement noise converge
+  where it previously stalled. New `control_opt(precond_meas_sigma = ,
+  fisher_refresh_every = )` select this curvature (`"auto"`, `"fisher"` or
+  `"complete"`) and how often it is recomputed.
+* `control_opt(nig_param_std = )` now applies to NIG measurement noise; it is
+  not applied to latent NIG noise. For such fits `attr(fit, "chain_params")`
+  and `conv_diag` hold the optimiser's coordinates for `mu`, `sigma` and `nu`.
+
 * Remove `moving_window` from `ngme()`. It was declared and documented ("return
   the average estimation of last .. iterations") but never read anywhere in the
   function, so it silently did nothing. 

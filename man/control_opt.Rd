@@ -42,6 +42,8 @@ control_opt(
   store_traj = TRUE,
   robust = FALSE,
   nig_param_std = 3,
+  precond_meas_sigma = c("auto", "fisher", "complete"),
+  fisher_refresh_every = 10L,
   stepsize_control = NULL,
   n_min_batch = 1,
   n_slope_check = min(n_batch, 3),
@@ -211,7 +213,10 @@ ill-conditioned that the Cholesky of \code{t(K) K} fails.}
 \item{robust}{use robust mode in the backend optimizer/model updates}
 
 \item{nig_param_std}{coordinates the optimiser uses for stationary NIG
-  noise, following Cabral, Bolin and Rue (2023). In the native parameters the
+  measurement noise, following Cabral, Bolin and Rue (2023). They apply when
+  the measurement noise is NIG with scalar, free and stationary \code{mu},
+  \code{sigma} and \code{nu}, unshifted \code{nu} and no correlation;
+  otherwise the native coordinates are used. In the native parameters the
   variance \code{h(sigma^2 + mu^2/nu)} is shared by all three, giving a long
   flat ridge; these coordinates turn that ridge into an axis. Only the
   optimiser's coordinates change and the objective, the priors and the
@@ -229,6 +234,26 @@ ill-conditioned that the Cholesky of \code{t(K) K} fails.}
     \item{3}{as 2 with \code{zeta*} carried as \code{asinh(zeta*)}, which
       keeps the skewness coordinate unbounded and better scaled (default)}
   }}
+
+\item{precond_meas_sigma}{curvature \code{precond_sgd()} uses for the
+measurement noise \code{sigma}.
+\describe{
+  \item{"auto"}{(default) the marginal Fisher information for non-Gaussian
+    measurement noise, the complete-data Hessian for Gaussian noise.}
+  \item{"fisher"}{always the marginal Fisher information, with the latent
+    field integrated out. It keeps \code{sigma} from stalling near zero
+    when the starting values are poor, e.g. fixed effects started far
+    from their OLS estimates, at some extra cost per iteration.}
+  \item{"complete"}{always the complete-data Hessian. Only supported for
+    Gaussian measurement noise; other noise uses \code{"fisher"}, with a
+    warning.}
+}
+Only used for uncorrelated measurement noise.}
+
+\item{fisher_refresh_every}{how often, in iterations, the Fisher information
+for the measurement \code{sigma} is recomputed (default 10). It is also
+recomputed as soon as \code{sigma} has moved by more than 5\%, and is
+never computed more than once per iteration.}
 
 \item{stepsize_control}{unified stepsize configuration created by
 \code{stepsize_control()}, \code{poly_decay()}, or \code{batch_decay()}.

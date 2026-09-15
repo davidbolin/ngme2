@@ -172,7 +172,10 @@
 #'   schedule scale at 1 for the first \code{B} iterations, then starts decay
 #'   with reset local time index.
 #' @param nig_param_std coordinates the optimiser uses for stationary NIG
-#'   noise, following Cabral, Bolin and Rue (2023). In the native parameters the
+#'   measurement noise, following Cabral, Bolin and Rue (2023). They apply when
+#'   the measurement noise is NIG with scalar, free and stationary \code{mu},
+#'   \code{sigma} and \code{nu}, unshifted \code{nu} and no correlation;
+#'   otherwise the native coordinates are used. In the native parameters the
 #'   variance \code{h(sigma^2 + mu^2/nu)} is shared by all three, giving a long
 #'   flat ridge; these coordinates turn that ridge into an axis. Only the
 #'   optimiser's coordinates change and the objective, the priors and the
@@ -190,6 +193,24 @@
 #'     \item{3}{as 2 with \code{zeta*} carried as \code{asinh(zeta*)}, which
 #'       keeps the skewness coordinate unbounded and better scaled (default)}
 #'   }
+#' @param precond_meas_sigma curvature \code{precond_sgd()} uses for the
+#'   measurement noise \code{sigma}.
+#'   \describe{
+#'     \item{"auto"}{(default) the marginal Fisher information for non-Gaussian
+#'       measurement noise, the complete-data Hessian for Gaussian noise.}
+#'     \item{"fisher"}{always the marginal Fisher information, with the latent
+#'       field integrated out. It keeps \code{sigma} from stalling near zero
+#'       when the starting values are poor, e.g. fixed effects started far
+#'       from their OLS estimates, at some extra cost per iteration.}
+#'     \item{"complete"}{always the complete-data Hessian. Only supported for
+#'       Gaussian measurement noise; other noise uses \code{"fisher"}, with a
+#'       warning.}
+#'   }
+#'   Only used for uncorrelated measurement noise.
+#' @param fisher_refresh_every how often, in iterations, the Fisher information
+#'   for the measurement \code{sigma} is recomputed (default 10). It is also
+#'   recomputed as soon as \code{sigma} has moved by more than 5\%, and is
+#'   never computed more than once per iteration.
 #' @param robust use robust mode in the backend optimizer/model updates
 #' @param continue_chains make \code{ngme(start = previous_fit)} a true
 #'   continuation (default \code{TRUE}). Three things follow from it:
@@ -250,6 +271,8 @@ control_opt <- function(
     store_traj = TRUE,
     robust = FALSE,
     nig_param_std = 3,
+    precond_meas_sigma = c("auto", "fisher", "complete"),
+    fisher_refresh_every = 10L,
     stepsize_control = NULL,
     n_min_batch = 1,
     n_slope_check = min(n_batch, 3),
@@ -279,6 +302,12 @@ control_opt <- function(
     R_hat_conv_check = TRUE,
     max_R_hat = 1.1) {
   step_clip <- match.arg(step_clip)
+  precond_meas_sigma <- match.arg(precond_meas_sigma)
+  stopifnot(
+    "fisher_refresh_every must be a positive whole number" =
+      length(fisher_refresh_every) == 1 && is.finite(fisher_refresh_every) &&
+      fisher_refresh_every >= 1 && fisher_refresh_every == round(fisher_refresh_every)
+  )
   strategy_list <- c("all", "ws")
   solver_backend_list <- c("eigen", "cholmod", "accelerate", "pardiso")
   solver_factor_list <- c("llt", "ldlt")
@@ -540,6 +569,8 @@ control_opt <- function(
     window_size = window_size,
     robust = robust,
     nig_param_std = nig_param_std,
+    precond_meas_sigma = match(precond_meas_sigma, c("auto", "fisher", "complete")) - 1L,
+    fisher_refresh_every = as.integer(fisher_refresh_every),
     R_hat_conv_check = R_hat_conv_check,
     max_R_hat = max_R_hat
   )
@@ -716,6 +747,8 @@ update_control_ngme <- function(control_ngme, control_opt) {
   control_ngme$nonsym_solver <- control_opt$nonsym_solver
   control_ngme$robust <- control_opt$robust
   control_ngme$nig_param_std <- control_opt$nig_param_std
+  control_ngme$precond_meas_sigma <- control_opt$precond_meas_sigma
+  control_ngme$fisher_refresh_every <- control_opt$fisher_refresh_every
 
   control_ngme
 }

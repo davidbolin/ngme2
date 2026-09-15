@@ -31,12 +31,8 @@ ngme_replicate <- function(
     }
   }
 
-  # Add fixed effect names
-  if (ncol(X) > 0) {
-    par_names <- c(par_names, paste0("feff_", seq_along(feff)))
-  }
-
-  # Add measurement error parameter names (free parameters only)
+  # Add measurement error parameter names (free parameters only). Order must
+  # match the C++ parameter vector: latent, measurement noise, fixed effects.
   merr_names <- {
     mu_params <- if (length(noise$theta_mu) == 0 || isTRUE(noise$fix_theta_mu)) {
       character(0)
@@ -65,6 +61,11 @@ ngme_replicate <- function(
     paste0("meas_", c(mu_params, sigma_params, nu_params, rho_params))
   }
   par_names <- c(par_names, merr_names)
+
+  # Add fixed effect names
+  if (ncol(X) > 0) {
+    par_names <- c(par_names, paste0("feff_", seq_along(feff)))
+  }
 
   n_params <- n_feff + n_la_params + noise$n_params
   structure(

@@ -6,6 +6,7 @@ BlockModel - for ngme each replicate
 
 #include "include/MatrixAlgebra.h"
 #include "include/factor_counters.h"
+#include "include/nig_std.h"
 #include "include/solver.h"
 #include "include/timer.h"
 #include "latent.h"
@@ -136,6 +137,17 @@ protected:
 
   // Gradient covariance matrix storage
   MatrixXd grad_covariance;
+  // Preconditioner for the measurement theta_sigma, control_opt(precond_meas_sigma):
+  // 0 = auto (Fisher for non-Gaussian measurement noise), 1 = always Fisher,
+  // 2 = complete-data Hessian (non-Gaussian noise falls back to Fisher).
+  int precond_meas_sigma_{0};
+  // Refresh the cached Fisher block every this many iterations, or sooner once
+  // theta_sigma has moved by more than 0.05.
+  int fisher_refresh_every_{10};
+  // The cached Fisher block, with the iteration and theta_sigma it was built at.
+  MatrixXd fisher_sigma_cache_;
+  int fisher_cache_iter_{-1000000};
+  VectorXd fisher_cache_theta_;
 
   // Cached preconditioners (averages from the most recent grad loop)
   MatrixXd last_precond; // cached preconditioner for last strategy
@@ -504,6 +516,12 @@ public:
   VectorXd get_theta_merr() const;
   VectorXd grad_theta_mu();
   VectorXd grad_theta_sigma();
+  // Expected information of the marginal likelihood (given V) for the free
+  // measurement theta_sigma; uncorrelated measurement noise only.
+  MatrixXd fisher_theta_sigma();
+  // Mode of the standardised NIG coordinates (nig_std.h) the optimiser uses
+  // for the measurement noise; 0 when they do not apply.
+  int merr_nig_mode() const;
   VectorXd grad_theta_merr();
   void set_theta_merr(const VectorXd &theta_merr);
 

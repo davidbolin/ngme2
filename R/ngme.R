@@ -103,6 +103,15 @@ ngme <- function(
   } # ngme noise object
 
   stopifnot(class(noise) == "ngme_noise")
+  if (identical(control_opt$precond_meas_sigma, 2L) &&
+      any(noise$noise_type != "normal")) {
+    warning(
+      "control_opt(precond_meas_sigma = \"complete\") is only supported for ",
+      "Gaussian measurement noise; using \"fisher\" for the ",
+      paste(noise$noise_type, collapse = "/"), " measurement noise.",
+      call. = FALSE
+    )
+  }
 
   # parse the formula get a list of ngme_replicate
   ngme_model <- ngme_parse_formula(
@@ -401,6 +410,17 @@ ngme <- function(
       }
 
       n_block_params <- nrow(block_traj[[1]])
+      # Measurement noise rows come first. If the optimiser used the
+      # standardised NIG coordinates for them, map back to native so the
+      # trajectories read like the reported estimates.
+      merr_mode <- est_output[[1]]$merr_nig_std
+      if (!is.null(merr_mode) && merr_mode > 0 && n_block_params >= 3) {
+        for (i in seq_along(block_traj)) {
+          block_traj[[i]][1:3, ] <- ngme_nig_std_to_native(
+            as.matrix(block_traj[[i]][1:3, , drop = FALSE]), merr_mode
+          )
+        }
+      }
       # Map fixed-effects trajectories back to raw parameterization so traceplot
       # is comparable with ngme_result()/printed feff.
       if (n_feff > 0) {
@@ -627,6 +647,23 @@ ngme_diag_vec <- function(x) {
     return(matrix(numeric(0), nrow = 0, ncol = 0))
   }
   diag(x, nrow = length(x), ncol = length(x))
+}
+
+# Standardised NIG coordinates (src/include/nig_std.h) -> native
+# (theta_mu, theta_sigma, theta_nu), column by column of a 3-row matrix.
+ngme_nig_std_to_native <- function(t, mode) {
+  xi <- function(z) 1 + z^2 - abs(z) * sqrt(1 + z^2)
+  sm <- exp(t[1, ])
+  if (mode == 1) {
+    zeta <- t[2, ]
+    eta <- exp(t[3, ])
+  } else {
+    zstar <- if (mode == 3) sinh(t[2, ]) else t[2, ]
+    eta <- exp(t[3, ]) * xi(zstar)^2
+    zeta <- zstar / sqrt(eta)
+  }
+  sigma <- sm / sqrt(1 + zeta^2 * eta)
+  rbind(zeta * sigma, log(sigma), -log(eta))
 }
 
 # use estimate result to update ngme object

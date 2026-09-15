@@ -135,6 +135,14 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   nig_param_std = control_ngme.containsElementNamed("nig_param_std")
                       ? Rcpp::as<int>(control_ngme["nig_param_std"])
                       : 0;
+  precond_meas_sigma_ =
+      control_ngme.containsElementNamed("precond_meas_sigma")
+          ? Rcpp::as<int>(control_ngme["precond_meas_sigma"])
+          : 0;
+  fisher_refresh_every_ =
+      control_ngme.containsElementNamed("fisher_refresh_every")
+          ? std::max(1, Rcpp::as<int>(control_ngme["fisher_refresh_every"]))
+          : 10;
   // reduce_var    =  Rcpp::as<bool>   (control_ngme["reduce_var"]);
   // reduce_power  =  Rcpp::as<double> (control_ngme["reduce_power"]);
   // threshold   =  Rcpp::as<double> (control_ngme["threshold"]);
@@ -701,11 +709,17 @@ void BlockModel::set_parameter_and_update(const VectorXd &Theta,
 
 // --------- Fiexed effects and Measurement Error ---------------
 VectorXd BlockModel::grad_beta() {
-  VectorXd noise_inv_SV =
-      noise_V.cwiseProduct(noise_sigma.array().pow(-2).matrix());
-
+  // Measurement precision: 1/(sigma^2 V), or Q_eps when correlated -- the same
+  // weighting the W sampler and the field score s_full use.
   VectorXd residual = get_residual(rao_blackwell); // + X * beta;
-  VectorXd grads = X.transpose() * noise_inv_SV.asDiagonal() * residual;
+  VectorXd grads;
+  if (!corr_measure) {
+    VectorXd noise_inv_SV =
+        noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
+    grads = X.transpose() * (noise_inv_SV.asDiagonal() * residual);
+  } else {
+    grads = X.transpose() * (Q_eps * residual);
+  }
 
   for (int l = 0; l < n_feff; ++l) {
     grads(l) +=
@@ -785,6 +799,72 @@ VectorXd BlockModel::grad_theta_sigma() {
   return grad;
 }
 
+// Expected (Fisher) information for the free measurement theta_sigma, of the
+// marginal likelihood with W integrated out, given V. With S = diag(sigma^2 V)
+// and dS/dtheta_l = 2 diag(b_l) S,
+//   F_lk = 1/2 tr(Sigma_Y^-1 dS_l Sigma_Y^-1 dS_k) = 2 tr(N B_l N B_k),
+//   N = S^1/2 Sigma_Y^-1 S^1/2 = I - H QQ^-1 H^T,   H = D^1/2 A Z.
+// The complete-data Hessian is ~2n whatever sigma is, while the marginal
+// information vanishes like sigma^4 as sigma -> 0 and the score like sigma^2.
+// Preconditioning with the former freezes a chain that has drifted onto the
+// sigma -> 0 plateau; with the latter the step grows there and it escapes.
+// N is symmetric with eigenvalues in (0, 1], so the Hutchinson estimate
+// (Nz)^T B_l (N B_k z) stays accurate relative to F even where F is tiny --
+// unlike expanding it into n - 2 tr(DP) + tr(DPDP), a difference of ~n terms.
+MatrixXd BlockModel::fisher_theta_sigma() {
+  std::vector<int> cols;
+  for (int i = 0; i < (int)theta_sigma.size(); ++i)
+    if (!fix_theta_sigma_vec[i])
+      cols.push_back(i);
+  const int p = (int)cols.size();
+  MatrixXd F = MatrixXd::Zero(p, p);
+  if (p == 0)
+    return F;
+  const bool masked = obs_weight.size() == n_obs;
+
+  if (n_latent == 0 || !QQ_valid) {
+    // No field: N = I.
+    for (int l = 0; l < p; ++l)
+      for (int k = 0; k <= l; ++k) {
+        VectorXd bb = B_sigma.col(cols[l]).cwiseProduct(B_sigma.col(cols[k]));
+        if (masked)
+          bb = bb.cwiseProduct(obs_weight);
+        F(l, k) = F(k, l) = 2.0 * bb.sum();
+      }
+    return F;
+  }
+
+  const SparseMatrix<double> &H = get_sqrt_AtSVA();
+  const int N = std::max(1, chol_QQ.get_N_iter());
+  std::mt19937 gen(static_cast<unsigned>(rng()));
+  std::bernoulli_distribution coin(0.5);
+  // Dropped observations get a zero probe entry, which removes them exactly.
+  MatrixXd Zp(n_obs, N);
+  for (int c = 0; c < N; ++c)
+    for (int r = 0; r < n_obs; ++r)
+      Zp(r, c) = (masked && obs_weight(r) == 0.0) ? 0.0
+                                                  : (coin(gen) ? 1.0 : -1.0);
+  auto applyN = [&](const MatrixXd &Y) {
+    MatrixXd rhs = H.transpose() * Y;
+    MatrixXd s = chol_QQ.solve(rhs);
+    return MatrixXd(Y - H * s);
+  };
+  const MatrixXd NZ = applyN(Zp);
+  std::vector<MatrixXd> NBZ(p);
+  for (int k = 0; k < p; ++k) {
+    const VectorXd bk = B_sigma.col(cols[k]);
+    NBZ[k] = bk.isOnes() ? NZ : applyN(bk.asDiagonal() * Zp);
+  }
+  for (int l = 0; l < p; ++l) {
+    const VectorXd bl = B_sigma.col(cols[l]);
+    for (int k = 0; k <= l; ++k) {
+      double acc = (NZ.array() * (bl.asDiagonal() * NBZ[k]).array()).sum();
+      F(l, k) = F(k, l) = 2.0 * acc / N;
+    }
+  }
+  return F;
+}
+
 VectorXd BlockModel::get_theta_merr() const {
   VectorXd theta_merr = VectorXd::Zero(n_merr);
 
@@ -805,7 +885,28 @@ VectorXd BlockModel::get_theta_merr() const {
   if (corr_measure && !fix_flag[block_fix_rho])
     theta_merr(n_merr - 1) = rho2th(rho(0));
 
+  // The optimiser sees the standardised coordinates when they apply.
+  if (int mode = merr_nig_mode()) {
+    Eigen::Vector3d native(theta_mu(0), theta_sigma(0), theta_nu(0));
+    theta_merr.head(3) = nig_std::from_native(mode, native);
+  }
   return theta_merr;
+}
+
+// The standardised map mixes mu, sigma and nu, so it needs all three free,
+// scalar and stationary, nu unshifted, and uncorrelated noise.
+int BlockModel::merr_nig_mode() const {
+  if (nig_param_std == 0 || family != "nig" || corr_measure)
+    return 0;
+  if (n_theta_mu != 1 || n_theta_sigma != 1 || n_theta_nu != 1 ||
+      theta_sigma.size() != 1 || nu_lower_bound != 0.0)
+    return 0;
+  if (fix_flag[block_fix_theta_mu] || fix_flag[block_fix_theta_sigma] ||
+      fix_flag[block_fix_theta_nu])
+    return 0;
+  if (!B_mu.isOnes() || !B_sigma.isOnes() || !B_nu.isOnes())
+    return 0;
+  return nig_param_std;
 }
 
 VectorXd BlockModel::grad_theta_merr() {
@@ -850,10 +951,15 @@ VectorXd BlockModel::grad_theta_merr() {
   return grad;
 }
 
-void BlockModel::set_theta_merr(const VectorXd &theta_merr) {
+void BlockModel::set_theta_merr(const VectorXd &theta_merr_in) {
   // if (debug) std::cout << "start set theta_merr" << std::endl;
   // noise_sigma / Q_eps feed the measurement block of QQ.
   invalidate_measurement();
+  // The optimiser may be working in the standardised coordinates; everything
+  // below (and every derivative) stays native, so convert on the way in.
+  VectorXd theta_merr = theta_merr_in;
+  if (int mode = merr_nig_mode())
+    theta_merr.head(3) = nig_std::to_native(mode, theta_merr_in.head(3));
   if (!fix_flag[block_fix_theta_mu])
     theta_mu = theta_merr.segment(0, n_theta_mu);
   if (!fix_flag[block_fix_theta_sigma]) {
@@ -868,8 +974,9 @@ void BlockModel::set_theta_merr(const VectorXd &theta_merr) {
   if (!fix_flag[block_fix_theta_nu])
     theta_nu = theta_merr.segment(n_theta_mu + n_theta_sigma, n_theta_nu);
 
+  // Cap nu at 1e4 (theta_nu is log nu).
   if (family != "normal" && theta_nu(0) > log(1e4))
-    theta_nu(0) = 1e4;
+    theta_nu(0) = log(1e4);
 
   // update rho, and Q_eps
   if (corr_measure && !fix_flag[block_fix_rho]) {
@@ -1201,6 +1308,13 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
       woff2 += L->get_W_size();
     }
     VectorXd noise_g = grad_theta_merr();
+    // Standardised NIG coordinates for the measurement noise: chain rule on
+    // the complete native gradient, grad_t = J^T grad_native.
+    if (int mode = merr_nig_mode()) {
+      Eigen::Vector3d native(theta_mu(0), theta_sigma(0), theta_nu(0));
+      noise_g.head(3) =
+          nig_std::jacobian(mode, native).transpose() * noise_g.head(3).eval();
+    }
     current_grad.segment(n_la_params, n_merr) = noise_g;
     noise_grad.head(n_merr) += noise_g;
     if (!fix_flag[block_fix_beta]) {
@@ -1241,17 +1355,21 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
       // per-latent block preconditioners
       auto t_pl = std::chrono::steady_clock::now();
       int pos2 = 0;
-      // Precompute u = Sigma^{-1} e for cross terms with theta_sigma
-      // (uncorrelated cases only)
-      VectorXd residual_ct = get_residual(use_condW);
-      VectorXd u_vec;
-      bool can_cross_sigma =
-          !corr_measure; // current formula assumes diagonal Sigma
-      if (can_cross_sigma) {
-        // u_i = e_i / (sigma_i^2 V_i')
-        u_vec = residual_ct.cwiseQuotient(
-            noise_sigma.array().square().matrix().cwiseProduct(noise_V));
-      }
+      // Measurement theta_sigma: the marginal Fisher information
+      // (fisher_theta_sigma) or the complete-data Hessian, per
+      // control_opt(precond_meas_sigma). "auto" uses Fisher for non-Gaussian
+      // measurement noise only: from reasonable starting values the
+      // complete-data block converges as fast for Gaussian noise at no extra
+      // cost, while for non-Gaussian noise it stalls or diverges -- so
+      // "complete" falls back to Fisher there. Fisher needs uncorrelated noise.
+      // When it is used the complete-data cross terms are dropped: those with
+      // beta and mu are exactly zero under the Gaussian Fisher information, and
+      // keeping any beside a near-zero F_sigma could make the preconditioner
+      // indefinite.
+      const bool fisher_wanted = precond_meas_sigma_ == 1 || family != "normal";
+      const bool fisher_sigma = fisher_wanted && !corr_measure &&
+                                n_theta_sigma > 0 &&
+                                !fix_flag[block_fix_theta_sigma];
       bool need_beta_cross = (n_feff > 0 && !fix_flag[block_fix_beta]);
       VectorXd inv_noise_SV_beta;
       if (need_beta_cross) {
@@ -1342,28 +1460,8 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
             precond_sum.block(pbase, pbase, n_k, n_k) += HZ;
           }
 
-          // Cross-term with theta_sigma: H_{theta,sigma} = -2 J_theta^T diag(u)
-          // B_sigma
-          if (can_cross_sigma && n_theta_sigma > 0 &&
-              !fix_flag[block_fix_theta_sigma]) {
-            int sigma_col0 = n_la_params + n_theta_mu;
-            for (int j = 0; j < n_k; ++j) {
-              // AZ_j W
-              const VectorXd &AZWj = AZdZW[j];
-              if (AZWj.size() == n_obs) {
-                VectorXd w = u_vec.cwiseProduct(AZWj);
-                // row j: -2 * (B_sigma^T * w)^T
-                VectorXd row = -2.0 * (B_sigma.transpose() * w);
-                if (pbase + j < n_params &&
-                    sigma_col0 + n_theta_sigma <= n_params) {
-                  precond_sum.block(pbase + j, sigma_col0, 1, n_theta_sigma) +=
-                      row.transpose();
-                  precond_sum.block(sigma_col0, pbase + j, n_theta_sigma, 1) +=
-                      row;
-                }
-              }
-            }
-          }
+          // (No complete-data cross term with measurement theta_sigma: see
+          // fisher_sigma above. Its old formula also assumed diagonal Sigma.)
 
           // Cross-term with theta_mu (noise mean):
           // H_{theta,mu} = - J_theta^T diag(w_mu) B_mu,
@@ -1415,22 +1513,34 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
 
       // measurement/fixed-effects block
       auto t_pm = std::chrono::steady_clock::now();
-      // 1) Analytic Hessian for measurement mu (noise mean) block:
-      // H_mu = - B_mu^T diag(w) B_mu, with
-      //   w_i = ((V_i - 1)^2) / (V_i * sigma_i^2)
-      if (n_theta_mu > 0 && !fix_flag[block_fix_theta_mu]) {
-        VectorXd noise_SV =
-            noise_sigma.array().square().matrix().cwiseProduct(noise_V);
-        VectorXd w =
-            (noise_V.array() - 1.0).square().matrix().cwiseQuotient(noise_SV);
-        MatrixXd Hmu = -(B_mu.transpose() * w.asDiagonal() * B_mu);
-        // Place analytic H_mu at the top-left of the (merr+feff) block
-        precond_sum.block(n_la_params + 0, n_la_params + 0, n_theta_mu,
-                          n_theta_mu) += Hmu;
-      }
+      // (Measurement mu is a mean parameter: its block, and its cross term with
+      // beta, are built jointly with beta in 1d below.)
 
-      // 1b) Analytic Hessian for measurement sigma and mu-sigma cross
-      if (n_theta_sigma > 0 && !fix_flag[block_fix_theta_sigma]) {
+      // 1b) Measurement sigma. Uncorrelated noise: the marginal Fisher
+      // information (fisher_theta_sigma), with no mu-sigma cross term.
+      if (fisher_sigma) {
+        // It changes smoothly and each refresh costs a block of QQ solves, so it
+        // is built at most once per iteration (in the first Gibbs pass) and
+        // refreshed every fisher_refresh_every_ iterations, or sooner once
+        // theta_sigma has moved by more than 0.05 -- it scales roughly like
+        // sigma^4, so a stale value matters most while sigma is moving.
+        bool refresh = fisher_sigma_cache_.rows() != n_theta_sigma ||
+                       fisher_cache_theta_.size() != theta_sigma.size();
+        if (!refresh && i == 0) {
+          refresh = curr_iter - fisher_cache_iter_ >= fisher_refresh_every_ ||
+                    (theta_sigma - fisher_cache_theta_).cwiseAbs().maxCoeff() >
+                        0.05;
+        }
+        if (refresh) {
+          fisher_sigma_cache_ = fisher_theta_sigma();
+          fisher_cache_iter_ = curr_iter;
+          fisher_cache_theta_ = theta_sigma;
+        }
+        precond_sum.block(n_la_params + n_theta_mu, n_la_params + n_theta_mu,
+                          n_theta_sigma, n_theta_sigma) -= fisher_sigma_cache_;
+      } else if (n_theta_sigma > 0 && !fix_flag[block_fix_theta_sigma]) {
+        // Complete-data Hessian and mu-sigma cross: Gaussian measurement noise
+        // under precond_meas_sigma "auto" or "complete", and correlated noise.
         // e = residual = Y - mu' (V-1) - A Z W - X beta
         VectorXd e = get_residual(use_condW);
         // H_sigma = -2 B_sigma^T diag(e^2 / (sigma^2 V)) B_sigma
@@ -1474,25 +1584,10 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
         }
       }
 
-      // Analytic cross-terms with beta
-      // H_{mu,beta} = - B_mu^T diag((V-1)/(sigma^2 ∘ V)) X
-      if (n_theta_mu > 0 && n_feff > 0 && !fix_flag[block_fix_theta_mu] &&
-          !fix_flag[block_fix_beta]) {
-        VectorXd wmb;
-        VectorXd noise_SV =
-            noise_sigma.array().square().matrix().cwiseProduct(noise_V);
-        wmb = (noise_V.array() - 1.0).matrix().cwiseQuotient(noise_SV);
-        MatrixXd Hmu_beta = -(B_mu.transpose() * wmb.asDiagonal() * X);
-        // Place [mu,beta] and its transpose
-        precond_sum.block(n_la_params + 0, n_la_params + n_merr, n_theta_mu,
-                          n_feff) += Hmu_beta;
-        precond_sum.block(n_la_params + n_merr, n_la_params + 0, n_feff,
-                          n_theta_mu) += Hmu_beta.transpose();
-      }
-
-      // H_{sigma,beta} = -2 B_sigma^T diag(e/(sigma^2 ∘ V)) X
-      if (n_theta_sigma > 0 && n_feff > 0 && !fix_flag[block_fix_theta_sigma] &&
-          !fix_flag[block_fix_beta]) {
+      // H_{sigma,beta} = -2 B_sigma^T diag(e/(sigma^2 ∘ V)) X, complete-data;
+      // zero under the Fisher information, so only with the complete-data block.
+      if (!fisher_sigma && n_theta_sigma > 0 && n_feff > 0 &&
+          !fix_flag[block_fix_theta_sigma] && !fix_flag[block_fix_beta]) {
         VectorXd e_sb = get_residual(use_condW);
         VectorXd wsb =
             2.0 *
@@ -1505,15 +1600,71 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
                           n_feff, n_theta_sigma) += Hsigma_beta.transpose();
       }
 
-      // 1d) Analytic Hessian for beta (fixed effects): H_beta = - X^T
-      // Sigma^{-1} X
-      if (n_feff > 0 && !fix_flag[block_fix_beta]) {
-        MatrixXd Hbeta;
-        VectorXd inv_noise_SV =
-            noise_sigma.array().pow(-2).matrix().cwiseQuotient(noise_V);
-        Hbeta = -(X.transpose() * inv_noise_SV.asDiagonal() * X);
-        precond_sum.block(n_la_params + n_merr, n_la_params + n_merr, n_feff,
-                          n_feff) += Hbeta;
+      // 1d) Mean parameters -- fixed effects beta and measurement mu -- jointly,
+      // Rao-Blackwellised over W. Given V both enter only the mean of Y,
+      //   E[Y | W, V] = diag(V - 1) B_mu theta_mu + X beta + A Z W,
+      // and their scores are linear in W, so with M = [diag(V - 1) B_mu, X]
+      // Louis' identity gives, exactly given V,
+      //   H = -(M^T D M - B^T QQ^{-1} B),   B = (AZ)^T D M,
+      // D the measurement precision (Q_eps when correlated): in the Gaussian case
+      // the marginal -M^T Sigma_Y^{-1} M. The complete-data -M^T D M overstates
+      // it by the information W carries -- badly for an intercept or a smooth
+      // covariate under a correlated field, and without bound for mu, whose
+      // sum (V-1)^2 / (sigma^2 V) diverges as sigma -> 0 while the marginal
+      // stays finite. Mean parameters are Fisher-orthogonal to sigma, so there
+      // are no mu-sigma or beta-sigma cross terms. One QQ solve per parameter.
+      const bool mean_mu = n_theta_mu > 0 && !fix_flag[block_fix_theta_mu];
+      const bool mean_beta = n_feff > 0 && !fix_flag[block_fix_beta];
+      if (mean_mu || mean_beta) {
+        const int p_mu = mean_mu ? n_theta_mu : 0;
+        const int p_b = mean_beta ? n_feff : 0;
+        MatrixXd M(n_obs, p_mu + p_b);
+        if (mean_mu)
+          M.leftCols(p_mu) =
+              (noise_V.array() - 1.0).matrix().asDiagonal() * B_mu;
+        if (mean_beta)
+          M.rightCols(p_b) = X;
+        MatrixXd DM;
+        if (!corr_measure)
+          DM = meas_prec().asDiagonal() * M;
+        else
+          DM = Q_eps * M;
+        MatrixXd Hm = -(M.transpose() * DM);
+        if (n_latent > 0 && QQ_valid) {
+          MatrixXd B = get_AZ().transpose() * DM;
+          MatrixXd QQinvB(B.rows(), B.cols());
+          for (int l = 0; l < B.cols(); ++l) {
+            VectorXd b = B.col(l);
+            QQinvB.col(l) = chol_QQ.solve(b);
+          }
+          Hm += B.transpose() * QQinvB;
+          Hm = (0.5 * (Hm + Hm.transpose())).eval();
+        }
+        // Prior curvature, by central difference of the prior score.
+        auto prior_curv = [](const string &type, const VectorXd &param,
+                             double v) {
+          const double h = 1e-5 * std::max(1.0, std::abs(v));
+          return (PriorUtil::d_log_dens(type, param, v + h) -
+                  PriorUtil::d_log_dens(type, param, v - h)) /
+                 (2.0 * h);
+        };
+        if (mean_mu && prior_mu_target == "coef")
+          for (int l = 0; l < p_mu; ++l)
+            Hm(l, l) += prior_curv(prior_mu_type, prior_mu_param, theta_mu(l));
+        for (int l = 0; l < p_b; ++l)
+          Hm(p_mu + l, p_mu + l) +=
+              prior_curv(prior_beta_type[l], prior_beta_param[l], beta(l));
+
+        const int mu0 = n_la_params, b0 = n_la_params + n_merr;
+        if (mean_mu)
+          precond_sum.block(mu0, mu0, p_mu, p_mu) += Hm.topLeftCorner(p_mu, p_mu);
+        if (mean_beta)
+          precond_sum.block(b0, b0, p_b, p_b) += Hm.bottomRightCorner(p_b, p_b);
+        if (mean_mu && mean_beta) {
+          precond_sum.block(mu0, b0, p_mu, p_b) += Hm.topRightCorner(p_mu, p_b);
+          precond_sum.block(b0, mu0, p_b, p_mu) +=
+              Hm.bottomLeftCorner(p_b, p_mu);
+        }
       }
 
       t_prec_merr_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -1546,6 +1697,15 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
   if (do_precond) {
     if (precond_count > 0) {
       last_precond = (1.0 / precond_count) * precond_sum;
+      // Standardised measurement NIG coordinates: the blocks above are native,
+      // so H_t = T^T H T with T the identity except J = d(native)/dt on the
+      // measurement (mu, sigma, nu) block. Cross blocks pick up J on that side.
+      if (int mode = merr_nig_mode()) {
+        Eigen::Vector3d native(theta_mu(0), theta_sigma(0), theta_nu(0));
+        MatrixXd T = MatrixXd::Identity(n_params, n_params);
+        T.block(n_la_params, n_la_params, 3, 3) = nig_std::jacobian(mode, native);
+        last_precond = (T.transpose() * last_precond * T).eval();
+      }
       // last_precond is the Hessian; Ngme::precond() negates it into the
       // information. Subtract so the ridge actually increases the
       // information diagonal that llt() factorises.
@@ -1950,6 +2110,9 @@ Rcpp::List BlockModel::output() const {
           Rcpp::Named("theta_nu") = theta_nu, Rcpp::Named("V") = noise_V,
           Rcpp::Named("rho") = rho),
       Rcpp::Named("feff") = beta,
+      // > 0 when the optimiser (hence the stored trajectory) used the
+      // standardised NIG coordinates for the measurement noise.
+      Rcpp::Named("merr_nig_std") = merr_nig_mode(),
       // Rcpp::Named("sampling_time")   = sampling_time.count(),
       Rcpp::Named("models") = latents_output
       // Rcpp::Named("log_likelihood")  = all_gaussian ? -log_likelihood() : 0

@@ -453,7 +453,7 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
                       opts.nonsym_solver);
     llt_inited = true;
   } else if (opts.n_trace_iter > 0 &&
-             cholK_solver.get_N_iter() != opts.n_trace_iter) {
+             cholK_solver.get_requested_N_iter() != opts.n_trace_iter) {
     // The budget is initialised once but may be driven at run time. Picking it
     // up here, before any trace is taken, keeps the operator-side probe count
     // in step with the caller instead of frozen at its construction value --
@@ -465,11 +465,22 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
   if (!K.isCompressed())
     K.makeCompressed();
   // Re-run the symbolic phase exactly when the sparsity pattern moved.
-  if (K_pattern_changed() || ngme_counters::cache_disabled()) {
+  const bool K_pattern_moved = K_pattern_changed();
+  if (K_pattern_moved || ngme_counters::cache_disabled()) {
     ngme_counters::bump(ngme_counters::K_analyzes);
     { ngme_timing::Scope _s(ngme_timing::k_symbolic_us()); cholK_solver.analyze(K); }
     record_K_pattern();
   }
+  // Re-source the colouring when the pattern REALLY moved, which is not the
+  // same condition as re-running the symbolic phase. The cache-disabled
+  // diagnostic re-runs that phase on an UNCHANGED pattern, to show the cache
+  // is not hiding anything, and so must not change any number. Re-sourcing
+  // here would change them: the colouring is rebuilt, and the limit on how
+  // often it may be rebuilt is then reached in that mode alone, leaving the
+  // two runs on different probe schemes. Only the graph is built here; the
+  // colouring itself waits until a trace is asked for.
+  if (K_pattern_moved)
+    setup_K_probing(opts);
   { ngme_timing::Scope _s(ngme_timing::k_numeric_us()); cholK_solver.compute(K); }
   // Either route to K^{-1} for a non-symmetric operator -- the LU of K, or the
   // Cholesky of K^T K -- is factorizing something that is singular only if K
@@ -616,6 +627,44 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
     }
     HK_trace_ready = true;
   }
+}
+
+// Point cholK_solver's probes at the graph of K, or take them off it.
+//
+// Both operator-side estimators ride the same probe block: tr(K^{-1} dK), where
+// the colouring pays for itself, and the H_K pair tr(K^{-1}K_k K^{-1}K_j),
+// where it does not -- two inverses roughly double the decay length, so the
+// colouring distances that fit a probe budget barely reach it. Sharing costs
+// nothing either way: H_K measures no worse on structured probes than on dense
+// ones, and splitting the two apart would mean two probe blocks and two sets of
+// solves where there is now one.
+void Operator::setup_K_probing(const UpdateOptions &opts) {
+  if (!opts.trace_probing) {
+    cholK_solver.disable_probing();
+    return;
+  }
+  // The colouring describes one sparsity pattern and is amortized over the
+  // iterations that share it. An operator whose pattern keeps moving never
+  // amortizes it, so probing is dropped rather than re-paid every iteration;
+  // the same reasoning as BlockModel::setup_qq_probing().
+  if (++k_probing_setups_ > 3) {
+    cholK_solver.disable_probing();
+    return;
+  }
+  const int budget = cholK_solver.get_requested_N_iter();
+  const int max_colours = std::max(budget, opts.trace_probing_max_colours);
+  // Two caps on raising the budget to reach a colouring, tighter wins: a
+  // multiple of what the caller asked for, and the ceiling this fit may spend.
+  const int raise_cap =
+      opts.trace_probing_raise_budget > 1.0
+          ? std::min((int)std::floor(opts.trace_probing_raise_budget * budget),
+                     std::max(budget, opts.trace_probing_max_colours))
+          : 0;
+  // One sign draw is enough here: nothing reads the operator-side probe
+  // variance, so there is no spread to measure and no reason to spend a second
+  // replicate on one.
+  cholK_solver.set_probing_source(K, opts.trace_probing_max_dist, max_colours,
+                                  /*min_reps*/ 1, raise_cap);
 }
 
 std::shared_ptr<Operator>

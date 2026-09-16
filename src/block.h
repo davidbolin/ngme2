@@ -109,8 +109,7 @@ protected:
   VectorXd indicate_threshold, steps_to_threshold;
   int curr_iter; // how many times set is called.
 
-  bool all_gaussian, rao_blackwell,
-      use_iterative_solver; // No need for gibbs sampling
+  bool all_gaussian, rao_blackwell;
   std::vector<std::string> par_names;
   VectorXd rb_trace_noise_sigma;
   // Per-parameter variance contributed by the Hutchinson trace estimators
@@ -141,6 +140,45 @@ protected:
   int n_fisher_probes_{-1};
   bool trace_adapt{false};
   double trace_adapt_frac{0.1};
+  // "share" = size the budget so the trace estimator carries trace_adapt_frac
+  // of the gradient variance (the original rule). "cost" = size it to minimise
+  // the variance of the Polyak-Ruppert average per unit of work, and only from
+  // the polish phase on. See suggest_trace_N_cost().
+  bool trace_adapt_cost_rule{false};
+  // Probe-proportional share of one gradient computation, measured once when
+  // the polish begins and then held. cost_ratio_ is a/b: how many probe
+  // columns cost as much as everything else in a pass. -1 = not yet measured.
+  double cost_ratio_{-1.0};
+  // Fill of QQ's Cholesky factor, as the selinv gate measured it once for its
+  // own decision. Reused as the cost ratio; see begin_polish_trace_rule().
+  double qq_fill_{-1.0};
+  // True once the polish has begun. It changes what the probe block has to
+  // deliver: the search under the cost rule does not adapt, so it does not need
+  // the probe variance and can run one sign draw over the colouring -- the
+  // cheapest form of probing there is. The polish does adapt, and a spread can
+  // only be measured across whole replicates, so it needs two.
+  bool in_polish_{false};
+  // Structure the Hutchinson probes against a colouring of the graph of QQ
+  // rather than drawing them densely; see include/probing.h. Off restores the
+  // dense Rademacher probes exactly. trace_probing_max_dist caps the colouring
+  // distance the solver may consider -- the probe count is capped by the budget
+  // either way, so this only bounds the work of looking for a colouring.
+  bool trace_probing{true};
+  int trace_probing_max_dist{4};
+  // The most the probe budget may be multiplied by in order to reach the
+  // smallest budget at which probing engages at all. 1 leaves the budget alone.
+  // A colouring costs one probe per colour, and that count is a property of the
+  // mesh, not of the budget, so on a well-connected graph the smallest usable
+  // budget can sit above a small default -- and probing then never engages,
+  // however much better it would spend the money.
+  double trace_probing_raise_budget{1.0};
+  // What the last [probing] debug line said, so the next one is printed only
+  // when the configuration actually moved. The budget adapts during a fit and
+  // the colouring distance moves with it, so a single line at the start would
+  // describe something that is no longer true.
+  int probing_reported_dist_{-1}, probing_reported_reps_{-1};
+  // How many times the colouring has been re-sourced. See setup_qq_probing().
+  int qq_probing_setups_{0};
   // The cadence of budget updates belongs to the driver, which applies one
   // agreed budget to every chain at the convergence checkpoints.
   int trace_adapt_min{5}, trace_adapt_max{200};
@@ -260,6 +298,10 @@ public:
 
   // The probe budget this block would like next, or -1 if it has none to offer.
   int get_suggested_trace_N() const { return suggested_trace_N_; }
+  // Measure the probe/iteration cost ratio and switch the budget rule over to
+  // the cost form. Called once, where the polish begins. Returns false if the
+  // measurement is not usable, leaving the budget where it is.
+  bool begin_polish_trace_rule();
   // Adopt a budget chosen for every chain at once. Applying it is separated
   // from suggesting it so the value can be agreed across chains first; see the
   // note on suggested_trace_N_.
@@ -381,6 +423,16 @@ public:
   // tr(QQ^{-1} T): exact via the selected inverse when the factor is cheap
   // enough, Hutchinson otherwise. Records the probe variance either way (zero
   // for the exact path) so the probe adapter keeps working.
+  // Point chol_QQ's probes at the graph of QQ (or take them off it when
+  // trace_probing is off). Called wherever the symbolic phase runs, since that
+  // is exactly where the pattern the colouring describes can have moved.
+  void setup_qq_probing();
+  // Print the probe structure under debug, but only when it has changed.
+  void report_probing();
+  // Budget from the cost rule; -1 when it cannot be formed yet.
+  int suggest_trace_N_cost();
+  // Refresh the smoothed per-parameter probe variances both rules read.
+  void update_probe_var_stats();
   double qq_trace(const Eigen::SparseMatrix<double, 0, int> &T, double &probe_var);
   // tr(QQ^-1 A^T diag(d) B). Same quantity as qq_trace() on the assembled
   // triple product, but it hands the three factors to the probe estimator

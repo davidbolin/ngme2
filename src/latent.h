@@ -99,7 +99,7 @@ protected:
     vector<double> trace;
     double eps {1e-5};
 
-    bool fix_flag[LATENT_FIX_FLAG_SIZE] {0}, numer_grad {false}, use_iterative_solver {false}, use_same_V {false};
+    bool fix_flag[LATENT_FIX_FLAG_SIZE] {0}, numer_grad {false}, use_same_V {false};
 
     vector<bool> fix_theta_sigma_vec;  // Vector-based fixing for theta_sigma parameters
 
@@ -128,6 +128,12 @@ protected:
     int solver_type_ {0};
     int nonsym_solver_ {0};
     int n_trace_iter_ {8};
+    bool trace_probing_ {true};
+    int trace_probing_max_dist_ {4};
+    // Ceiling the probe budget can reach over the fit; the colouring search is
+    // capped there since nothing larger could ever be afforded.
+    int trace_probing_max_colours_ {0};
+    double trace_probing_raise_budget_ {1.0};
     double selinv_max_fill_ {4.0};
     double selinv_cost_ratio_ {2.0};
     bool robust_ {false};

@@ -2,6 +2,7 @@
 #include "../include/solver.h"
 #include "../include/phase_timing.h"
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <random>
 #include <utility>
@@ -16,30 +17,156 @@ double myround(double x) {
   }
 }
 
-// Probe vectors for the Hutchinson estimators.
+// The colouring for one distance, computed on first use and then kept. An
+// empty entry records a distance whose colour count ran past the cap; since
+// the count only grows with the distance, that also rules out everything
+// beyond it.
+int sparse_llt_solver::colouring_for(int d) {
+  if (d < 1 || d > probe_max_dist_ || probe_adj_.empty() || probe_adj_.n != n)
+    return 0;
+  if ((int)colour_cache_.size() < probe_max_dist_) {
+    colour_cache_.resize(probe_max_dist_);
+    colour_count_cache_.resize(probe_max_dist_, -1);
+  }
+  if (colour_count_cache_[d - 1] < 0) {
+    int cnt = 0;
+    colour_cache_[d - 1] =
+        ngme_probing::distance_colouring(probe_adj_, d, probe_max_colours_, cnt);
+    colour_count_cache_[d - 1] = cnt;
+  }
+  return colour_count_cache_[d - 1] > 0 ? colour_count_cache_[d - 1] : 0;
+}
+
+// The smallest budget at which probing engages -- one colouring at distance 1,
+// times the replicates the caller needs over it -- provided the caller has
+// allowed the budget to be raised that far. Zero when it has not, or when no
+// distance-1 colouring fits inside the colour cap.
+int sparse_llt_solver::probing_floor_() {
+  if (!probing_requested_ || probe_raise_cap_ < 1)
+    return 0;
+  const int p = colouring_for(1);
+  if (p <= 0)
+    return 0;
+  const long long floor_budget = (long long)p * probe_min_reps_;
+  return floor_budget <= probe_raise_cap_ ? (int)floor_budget : 0;
+}
+
+// The budget in force is the caller's, raised to the probing floor when there
+// is one. Doing the clamp HERE rather than at each call site means a budget the
+// controller later lowers cannot drop probing back off: probing cuts the
+// measured probe variance by an order of magnitude the moment it engages, so a
+// controller steering that variance to a target immediately wants to spend
+// less -- and spending less would switch probing off, which puts the variance
+// back. Left alone the budget cycles across that boundary forever; clamped, it
+// settles on the side that meets the target for less.
+void sparse_llt_solver::refresh_budget_() {
+  const int want = std::max(N_requested_, probing_floor_());
+  if (want == N_budget_ && !probe_config_stale_)
+    return;
+  N_budget_ = want;
+  N_iter = want;
+  probe_config_stale_ = true;
+  U_computed = false;
+  QU_computed = false;
+  S_sel_ready = false;
+  exact_trace = false;
+}
+
+// Spend the budget on the largest colouring distance it can afford, then put
+// whatever is left into repeat sign draws over it. Distance buys accuracy
+// geometrically; extra draws only buy 1/sqrt(count), so distance goes first.
 //
-// Normally these are N_iter Rademacher vectors and the estimators average
-// u^T A u over them. When the system is no larger than the probe budget
-// (n <= N_iter) that is wasteful and needlessly noisy: n probes along the
-// coordinate axes give the trace exactly, for no more work. Scaling them by
-// sqrt(n) makes the exact case fall out of the same 1/N_iter averaging the
-// stochastic case uses, so no estimator code has to know which mode it is in:
-//     sum_i (sqrt(n) e_i)^T A (sqrt(n) e_i) / n = sum_i A_ii = tr(A).
+// N_iter never exceeds the budget, and a budget too small for a distance-1
+// colouring leaves the solver on plain Rademacher probes.
+void sparse_llt_solver::configure_probing() {
+  probe_config_stale_ = false;
+  probing_ = false;
+  n_colours_ = 0;
+  probe_dist_ = 0;
+  probe_reps_ = 1;
+  N_iter = N_budget_;
+  if (!probing_requested_ || N_budget_ < 1)
+    return;
+  if (probe_adj_.empty() || probe_adj_.n != n) {
+    // The factorized dimension moved away from the graph the probes were
+    // structured against; without the matching graph there is no colouring to
+    // use, and a stale one would mask entries it no longer covers.
+    probing_requested_ = false;
+    return;
+  }
+
+  for (int d = 1; d <= probe_max_dist_; ++d) {
+    const int p = colouring_for(d);
+    if (p <= 0)
+      break; // over the cap here, and the count only grows with d
+    if ((long long)p * probe_min_reps_ > N_budget_)
+      break; // no longer affordable, and larger d is dearer still
+    n_colours_ = p;
+    probe_dist_ = d;
+  }
+  if (probe_dist_ < 1 || n_colours_ < 1)
+    return;
+  probe_reps_ = std::max(1, N_budget_ / n_colours_);
+  N_iter = n_colours_ * probe_reps_;
+  probing_ = true;
+}
+
+// Probe vectors for the Hutchinson estimators. Three modes, all reduced by the
+// same 1/N_iter averaging so that no estimator below has to know which one it
+// is in:
+//
+//   exact      -- when the system is no larger than the probe budget, n probes
+//                 along the coordinate axes give the trace exactly for no more
+//                 work than the stochastic estimate. Scaling them by sqrt(n)
+//                 makes that fall out of the same averaging:
+//                     sum_i (sqrt(n) e_i)^T A (sqrt(n) e_i) / n = tr(A).
+//   probing    -- one probe per class of a distance-d colouring of the matrix
+//                 graph, carrying signs on its own class and zero elsewhere,
+//                 scaled by sqrt(p) for the same reason. See include/probing.h
+//                 for why the support, rather than the distribution, is what
+//                 removes the estimator's error.
+//   Rademacher -- dense +-1 probes, the fallback when no colouring fits the
+//                 budget.
 void sparse_llt_solver::ensure_U(unsigned int seed) {
-  if (n > 0 && N_iter >= n) {
+  if (n > 0 && N_budget_ >= n) {
     if (U_computed && exact_trace && U.rows() == n && U.cols() == n)
       return;
     N_iter = n;
+    probing_ = false;
     U = Eigen::MatrixXd::Identity(n, n) * std::sqrt(static_cast<double>(n));
     exact_trace = true;
     U_seed = seed;
     U_computed = true;
     return;
   }
+  if (probe_config_stale_)
+    configure_probing();
   if (U_computed && !exact_trace && U_seed == seed && U.rows() == n &&
       U.cols() == N_iter)
     return;
   std::mt19937 rng(seed);
+
+  if (probing_) {
+    // One probe per colour class per replicate: signs on the class, zero
+    // elsewhere. The classes partition the index set, so summing u^T A u over a
+    // replicate's columns is unbiased for tr(A) with no rescaling; the sqrt(p)
+    // only makes the 1/N_iter every estimator already divides by come out
+    // right, exactly as the sqrt(n) does on the exact path above.
+    const double s = std::sqrt(static_cast<double>(n_colours_));
+    U.setZero(n, N_iter);
+    std::uniform_real_distribution<double> dist(-1.0, 1.0);
+    const std::vector<int> &col = colour_cache_[probe_dist_ - 1];
+    for (int r = 0; r < probe_reps_; ++r) {
+      const int base = r * n_colours_;
+      for (int i = 0; i < n; ++i)
+        U(i, base + col[i]) = myround(dist(rng)) * s;
+    }
+    exact_trace = false;
+    U_seed = seed;
+    U_computed = true;
+    return;
+  }
+
   std::uniform_real_distribution<double> dist(-1.0, 1.0);
   U.resize(n, N_iter);
   for (int i = 0; i < n; ++i)
@@ -72,17 +199,54 @@ void sparse_llt_solver::ensure_QU(unsigned int seed) {
 
 // Reduce a block MQU = M QU against the probes: mean_i u_i^T (M QU)_i.
 double sparse_llt_solver::reduce_probes(const Eigen::MatrixXd &MQU) {
+  const int per_rep = probing_ ? n_colours_ : 0;
   double t = 0, t2 = 0;
+  double rep_sum = 0, rep_sum2 = 0, rep_acc = 0;
   for (int i = 0; i < N_iter; i++) {
     double probe = U.col(i).dot(MQU.col(i));
     t += probe;
     t2 += probe * probe;
+    if (per_rep) {
+      rep_acc += probe;
+      if ((i + 1) % per_rep == 0) {
+        // One replicate covers every index exactly once, so this is a complete
+        // estimate of the trace on its own.
+        const double e = rep_acc / per_rep;
+        rep_sum += e;
+        rep_sum2 += e * e;
+        rep_acc = 0;
+      }
+    }
   }
   double mean = t / N_iter;
-  // Spread of the probes: the estimator's own variance is this over N_iter.
+
+  // last_probe_var_ is reported against the BUDGET, so that its consumer can
+  // read the estimator's variance off as last_probe_var_ / budget whichever
+  // probe scheme produced it.
+  //
   // With the exact (scaled identity) U the trace carries no estimation error,
   // however much the diagonal entries vary, so report zero.
-  if (exact_trace || N_iter < 2)
+  if (exact_trace) {
+    last_probe_var_ = 0.0;
+    return mean;
+  }
+  if (probing_) {
+    // Columns within a replicate are not interchangeable: each covers its own
+    // colour class, so their spread measures how unevenly the trace sits across
+    // classes -- a property of the matrix, not an error. Only whole replicates
+    // are i.i.d., so the variance comes from those; -1 means a single replicate
+    // left nothing to measure.
+    if (probe_reps_ < 2) {
+      last_probe_var_ = -1.0;
+      return mean;
+    }
+    const double r = static_cast<double>(probe_reps_);
+    const double m = rep_sum / r;
+    const double s2 = (rep_sum2 - r * m * m) / (r - 1.0);
+    last_probe_var_ = std::max(0.0, (s2 / r) * static_cast<double>(N_budget_));
+    return mean;
+  }
+  if (N_iter < 2)
     last_probe_var_ = 0.0;
   else
     last_probe_var_ = (t2 - N_iter * mean * mean) / (N_iter - 1);

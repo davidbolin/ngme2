@@ -182,6 +182,12 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       control_opt.containsElementNamed("schedule_auto_start")
           ? Rcpp::as<bool>(control_opt["schedule_auto_start"])
           : false;
+  // "share" (default) sizes the probe budget by the fraction of gradient
+  // variance the trace estimator carries; "cost" sizes it to spend work best on
+  // the precision of the averaged estimate, and only from the polish on.
+  const bool trace_adapt_cost_rule =
+      control_opt.containsElementNamed("trace_adapt_rule") &&
+      Rcpp::as<std::string>(control_opt["trace_adapt_rule"]) == "cost";
   const bool mc_se_conv_check =
       control_opt.containsElementNamed("mc_se_conv_check")
           ? Rcpp::as<bool>(control_opt["mc_se_conv_check"])
@@ -533,7 +539,11 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     // barrier, so every iteration waits on whichever chain chose the largest
     // budget. The maximum is taken because the budget has to be adequate for
     // the chain that needs it most.
-    if (trace_adapt_sync && steps - last_trace_sync >= trace_adapt_every_sync) {
+    // Under the cost rule the search deliberately holds its budget: probe noise
+    // was measured not to change how long stationarity takes, so moving the
+    // budget here costs work and buys nothing. The polish adapts instead.
+    if (trace_adapt_sync && !trace_adapt_cost_rule &&
+        steps - last_trace_sync >= trace_adapt_every_sync) {
       int N_sync = -1;
       for (int c = 0; c < n_chains; c++)
         N_sync = std::max(N_sync, ngmes[c]->suggest_trace_N());
@@ -1338,6 +1348,15 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   MatrixXd polish_batch_sum = MatrixXd::Zero(n_chains, n_params);
   int polish_batch_fill = 0;
   if (polish_budget > 0 && n_chains > 0) {
+    // The cost rule takes over here. Measuring the probe/pass cost ratio needs a
+    // run of passes behind it, and the search has just provided one; taking it
+    // once, at this point, keeps the search a function of the matrices alone
+    // and confines anything machine-dependent to the polish budget.
+    bool cost_rule_live = false;
+    if (trace_adapt_cost_rule) {
+      for (int c = 0; c < n_chains; c++)
+        cost_rule_live = ngmes[c]->begin_polish_trace_rule() || cost_rule_live;
+    }
     double polish_scale = stepsize_decay_scale * polish_stepsize_factor;
     double polish_cur_scale = polish_scale;
     for (i = 0; i < n_chains; i++) {
@@ -1420,6 +1439,19 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       // further iterations stop buying anything the data can support.
       if (n_chains > 1 && polish_done >= polish_check_every &&
           (polish_done % polish_check_every == 0)) {
+        // Re-size the probe budget on the same cadence as the precision check,
+        // and to one value for every chain, for the reason the search does:
+        // chains that probe at different budgets carry different estimator
+        // variances, and the spread between them is read as evidence about the
+        // spread within them.
+        if (cost_rule_live) {
+          int N_sync = -1;
+          for (int c = 0; c < n_chains; c++)
+            N_sync = std::max(N_sync, ngmes[c]->suggest_trace_N_cost());
+          if (N_sync > 0)
+            for (int c = 0; c < n_chains; c++)
+              ngmes[c]->apply_trace_N(N_sync);
+        }
         // Classify each parameter by whether averaging can still work.
         // r_k = delta_k * sqrt(H) / S_k, dimensionless: can this chain's random
         // walk cross the current between-chain spread within the horizon?
@@ -1961,6 +1993,53 @@ check_conv(const MatrixXd &means, const MatrixXd &vars, int curr_batch,
 //       }
 //     }
 //     return(output)
+// Draw the Hutchinson trace estimator repeatedly, with the probes either
+// structured against the graph of Q or drawn densely, and return every estimate
+// together with the structure that was chosen.
+//
+// This exists because the property that matters about the estimator is a
+// statement about its distribution -- unbiased, with a far smaller spread at
+// the same probe count -- and no single fit exhibits it. Each repetition
+// re-factorizes and re-draws exactly as a Gibbs pass does, so what comes back
+// is the estimator the fit actually uses rather than a reimplementation of it.
+// [[Rcpp::export]]
+Rcpp::List trace_probe_draws(const Eigen::SparseMatrix<double, 0, int> &Q,
+                             const Eigen::SparseMatrix<double, 0, int> &M,
+                             int n_probes, int reps, bool probing,
+                             int max_dist = 4, int min_reps = 1,
+                             int raise_cap = 0, int solver_type = 0,
+                             unsigned int seed = 1) {
+  if (Q.rows() != Q.cols() || M.rows() != Q.rows() || M.cols() != Q.rows())
+    Rcpp::stop("Q must be square and M must match it");
+  if (n_probes < 1 || reps < 1)
+    Rcpp::stop("n_probes and reps must be positive");
+
+  sparse_llt_solver s;
+  s.init(Q.rows(), n_probes, /*symmetric*/ true, solver_type);
+  s.analyze(Q);
+  if (probing)
+    s.set_probing_source(Q, max_dist, std::max(n_probes, raise_cap), min_reps,
+                         raise_cap);
+
+  Rcpp::NumericVector est(reps), pvar(reps);
+  std::mt19937 rng(seed);
+  for (int r = 0; r < reps; ++r) {
+    // Refactorizing is what invalidates the cached probe block, which is how
+    // the fit gets fresh probes every Gibbs pass. Reusing that path here rather
+    // than reaching in to reset the cache keeps the diagnostic on the same code
+    // the fit runs.
+    s.compute(Q);
+    est[r] = s.trace(M, rng());
+    pvar[r] = s.last_probe_var();
+  }
+  return Rcpp::List::create(
+      Rcpp::_["estimate"] = est, Rcpp::_["probe_var"] = pvar,
+      Rcpp::_["probing"] = s.probing_active(),
+      Rcpp::_["n_colours"] = s.probe_colours(),
+      Rcpp::_["distance"] = s.probe_dist(), Rcpp::_["reps"] = s.probe_reps(),
+      Rcpp::_["budget"] = s.get_N_iter(), Rcpp::_["n_probes"] = s.get_n_probes());
+}
+
 // [[Rcpp::export]]
 int get_openmp_threads() {
 #ifdef _OPENMP

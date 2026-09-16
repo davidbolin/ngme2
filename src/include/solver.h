@@ -6,6 +6,7 @@
 #undef COMPLEX
 
 #include "MatrixAlgebra.h"
+#include "probing.h"
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <cholmod.h>
@@ -112,11 +113,24 @@ private:
 
   int solver_type{0};
   int n{0}; // dimension of the factorized system (rows of Q)
+  // Probe columns actually solved for. Equal to the budget below except under
+  // structured probing, where it is quantized down to a whole number of
+  // colourings, and on the exact path, where it is the dimension.
   int N_iter{10};
+  // The budget in force: what the caller asked for, except that structured
+  // probing may raise it to the smallest budget at which it can engage (see
+  // probing_floor_). Kept apart from N_iter because the adaptive controller
+  // steers this number and reads it back: a quantization that lands short must
+  // not be read back as the new budget, or the budget could never climb past
+  // the colour count it was rounded down to.
+  int N_budget_{10};
+  // What the caller last asked for, before any probing raise. Kept so that a
+  // caller which re-asserts its own budget every iteration -- Operator does --
+  // does not read the raised value back as a disagreement and undo the raise.
+  int N_requested_{10};
   bool isSymmetric{true};
-  Eigen::SparseMatrix<double, 0, int> Qi;
   Eigen::MatrixXd U, QU;
-  bool Qi_computed{false}, QU_computed{false};
+  bool QU_computed{false};
   // Hutchinson probe vectors.
   bool U_computed{false};
   unsigned int U_seed{0};
@@ -124,11 +138,12 @@ private:
   // probe budget is at least the dimension (n <= N_iter) and the trace is
   // therefore computed exactly.
   bool exact_trace{false};
-  // Sample variance of the individual Hutchinson probe values from the most
-  // recent trace()/trace2() call. The estimator averages N_iter probes, so the
-  // variance it contributes to the gradient is last_probe_var_ / N_iter. This
-  // is what lets the probe count be tuned against the Gibbs noise instead of
-  // being fixed a priori. Zero when the trace was taken exactly.
+  // Spread of the Hutchinson estimate from the most recent trace()/trace2()
+  // call, scaled so that the variance the estimator contributes to the gradient
+  // is last_probe_var_ / N_budget_ under EVERY probe scheme. This is what lets
+  // the probe count be tuned against the Gibbs noise instead of being fixed a
+  // priori. Zero when the trace was taken exactly, and -1 when probing is on
+  // with a single replicate, where there is nothing to measure a spread from.
   double last_probe_var_{0.0};
   // Selected (Takahashi) inverse of the factorized matrix, held on the
   // sparsity pattern of the Cholesky factor. Exact where it is defined, and
@@ -153,9 +168,61 @@ private:
   // itself -- is then dead weight, and for a 2-d mesh the private factor
   // alone is the same order as the solver's own. See disable_selinv().
   bool selinv_off_{false};
+  // --- structured probing (see include/probing.h) --------------------------
+  // The index graph the probes are structured against, held only while probing
+  // is a live possibility.
+  ngme_probing::Adjacency probe_adj_;
+  // Colourings already computed, by distance. Kept because the budget moves
+  // during a fit and the distance is re-selected against it; each colouring is
+  // then paid for once rather than at every budget change. A distance whose
+  // count exceeded the cap is recorded as an empty colouring, and since the
+  // count only grows with distance, no larger distance is tried after one.
+  std::vector<std::vector<int>> colour_cache_;
+  std::vector<int> colour_count_cache_;
+  // The colouring in use, its colour count, the distance it came from, and how
+  // many independent sign draws are averaged over it. While probing is on,
+  // N_iter == n_colours_ * probe_reps_ <= N_budget_.
+  //
+  // The colouring is identified by its DISTANCE and looked up in the cache at
+  // the point of use. Holding a pointer into colour_cache_ instead would not
+  // survive the search in configure_probing(): testing the next distance grows
+  // that cache, which moves everything already in it.
+  int n_colours_{0};
+  int probe_dist_{0};
+  int probe_reps_{1};
+  bool probing_{false};
+  // Set by set_probing_source(); probing is then configured lazily, so a solver
+  // that is never asked for a trace never pays for a colouring.
+  bool probing_requested_{false};
+  int probe_max_dist_{4};
+  int probe_max_colours_{200};
+  // Replicates required before probing is worth selecting. Two whenever the
+  // probe variance has to be reported, because only whole replicates are
+  // i.i.d. draws and a single one gives nothing to estimate a spread from.
+  int probe_min_reps_{1};
+  // Largest budget probing may raise itself to in order to engage at all.
+  // Zero leaves the caller's budget alone, which is the historical behaviour
+  // and what `trace_probing_raise_budget = 1` asks for.
+  int probe_raise_cap_{0};
+  bool probe_config_stale_{true};
+
   void ensure_U(unsigned int seed);
   void ensure_QU(unsigned int seed);
   double reduce_probes(const Eigen::MatrixXd &MQU);
+  // Pick the colouring distance that fits the current budget, largest first,
+  // and set N_iter from it. Cheap after the first call: the colourings are
+  // cached and the budget rarely crosses a boundary.
+  void configure_probing();
+  // Ensures the colouring for distance d is cached; returns its colour count,
+  // or 0 if it ran past the cap. The colouring itself is read out of the cache
+  // by index, never held across another call.
+  int colouring_for(int d);
+  // The smallest budget at which probing engages, if the caller has allowed the
+  // budget to be raised that far; 0 otherwise.
+  int probing_floor_();
+  // Recompute N_budget_ from the requested budget and the probing floor, and
+  // invalidate whatever the old budget sized.
+  void refresh_budget_();
   // For non-symmetric mode we keep the last K to build normal equations and to
   // apply K^T on RHS when required
   Eigen::SparseMatrix<double, 0, int> K_last;
@@ -164,13 +231,8 @@ public:
   sparse_llt_solver() = default;
   sparse_llt_solver(int stype, int nin, int Ntrace, bool symmetric)
       : solver_type(ngme_fork_safe_stype(stype)), n(nin), N_iter(Ntrace),
-        isSymmetric(symmetric) {}
+        N_budget_(Ntrace), N_requested_(Ntrace), isSymmetric(symmetric) {}
 
-  // Backward-compatible init plus symmetric toggle
-  inline void init(int nin, int Ntrace, int /*max_iter*/, double /*tol*/,
-                   int stype) {
-    init(nin, Ntrace, /*symmetric*/ true, stype);
-  }
   // nonsym_mode: 0 = LU of K (default), 1 = Cholesky of the normal equations
   // K^T K (the historical path). Chosen by control_opt(nonsym_solver = ).
   inline void init(int nin, int Ntrace, bool symmetric, int stype,
@@ -179,6 +241,8 @@ public:
     lu_ok = false;
     n = nin;
     N_iter = Ntrace;
+    N_budget_ = Ntrace;
+    N_requested_ = Ntrace;
     // Accelerate is not fork-safe; in a forked child this returns the CHOLMOD
     // equivalent instead. See ngme_fork_safe_stype() above.
     solver_type = ngme_fork_safe_stype(stype);
@@ -186,10 +250,11 @@ public:
     // U / QU are the n x N_iter Hutchinson probe blocks. ensure_U() sizes them
     // on the first trace() / trace2() call, so a solver that is never asked for
     // a trace -- or a fit with Rao-Blackwellisation off -- never pays for them.
-    Qi_computed = QU_computed = false;
+    QU_computed = false;
     S_sel_ready = false;
     U_computed = false;
     exact_trace = false;
+    disable_probing();
   }
   void analyze(const Eigen::SparseMatrix<double, 0, int> &M) {
     if (use_lu) {
@@ -284,7 +349,6 @@ public:
       K_last = M;
       R_lu.factorize(M);
       lu_ok = (R_lu.info() == Eigen::Success);
-      Qi_computed = false;
       QU_computed = false;
     S_sel_ready = false;
       const int new_n = M.cols();
@@ -368,7 +432,6 @@ public:
       throw std::runtime_error("Pardiso solver not available (recompile with "
                                "USEMKL) or invalid solver_type");
     }
-    Qi_computed = false;
     QU_computed = false;
     S_sel_ready = false;
     const int new_n = isSymmetric ? M.rows() : M.cols();
@@ -584,7 +647,9 @@ public:
                         const Eigen::VectorXd &d,
                         const Eigen::SparseMatrix<double, 0, int> &B,
                         unsigned int seed = 0);
-  // Variance of the individual probe values in the last trace call (0 if exact).
+  // Spread of the last trace estimate, scaled so that the estimator's variance
+  // is this over get_N_iter(). Zero if the trace was exact, negative if it
+  // could not be measured (see last_probe_var_).
   double last_probe_var() const { return last_probe_var_; }
   // Simplicial factorizations expose matrixL(); the CHOLMOD ones do not, and
   // the LU path is not a Cholesky at all.
@@ -647,20 +712,91 @@ public:
   // tr(Q^{-1} M) from the selected inverse. False when an entry M needs falls
   // outside the factor's pattern, leaving the caller to fall back to probing.
   bool selinv_trace(const Eigen::SparseMatrix<double, 0, int> &M, double &out);
-  int get_N_iter() const { return N_iter; }
+  // The probe budget, which is what the adaptive controller steers and what
+  // last_probe_var() is expressed against. Identical to the number of probe
+  // columns unless structured probing quantized it down; see N_budget_.
+  int get_N_iter() const { return N_budget_; }
+  // What the caller last asked for, before any probing raise. A caller that
+  // re-asserts its own budget each iteration must compare against THIS, not
+  // against get_N_iter(), or it will read the raise back as a disagreement and
+  // undo it on every pass.
+  int get_requested_N_iter() const { return N_requested_; }
+  // Probe columns actually solved for.
+  int get_n_probes() const { return N_iter; }
   bool is_exact_trace() const { return exact_trace; }
   // Change the probe budget at run time. Invalidates the cached probes so the
   // next trace call regenerates them (and switches to the exact path if the
   // budget now reaches the dimension).
   void set_N_iter(int Ntrace) {
-    if (Ntrace < 1 || Ntrace == N_iter)
+    if (Ntrace < 1 || Ntrace == N_requested_)
       return;
-    N_iter = Ntrace;
-    U_computed = false;
-    QU_computed = false;
-    S_sel_ready = false;
-    exact_trace = false;
+    N_requested_ = Ntrace;
+    refresh_budget_();
   }
+
+  // Structure the Hutchinson probes against the graph of A instead of drawing
+  // them densely. Costs nothing here: the adjacency is built, but the colouring
+  // itself waits until a trace is actually asked for, and is then chosen
+  // against the budget in force at that moment. Passing max_dist < 1 -- or a
+  // matrix whose graph cannot be coloured inside max_colours -- leaves the
+  // solver on plain Rademacher probes.
+  //
+  // min_reps is the number of independent sign draws the caller needs over one
+  // colouring. Two are required to report a probe variance, since only whole
+  // replicates are exchangeable; the distance is then chosen so that min_reps
+  // of them still fit the budget, which is what keeps the probe count from
+  // rising above what was already being spent.
+  //
+  // raise_cap is the largest budget probing may raise ITSELF to when the
+  // caller's budget is too small for any colouring. Zero leaves the budget
+  // alone, and probing then simply stays off at such a budget.
+  void set_probing_source(const Eigen::SparseMatrix<double, 0, int> &A,
+                          int max_dist, int max_colours, int min_reps,
+                          int raise_cap = 0) {
+    disable_probing();
+    if (max_dist < 1 || A.rows() != A.cols() || A.rows() <= 0)
+      return;
+    probe_adj_ = ngme_probing::build_adjacency(A);
+    if (probe_adj_.empty())
+      return;
+    probe_max_dist_ = max_dist;
+    probe_max_colours_ = std::max(1, max_colours);
+    probe_min_reps_ = std::max(1, min_reps);
+    probe_raise_cap_ = std::max(0, raise_cap);
+    probing_requested_ = true;
+    refresh_budget_();
+  }
+  void disable_probing() {
+    const bool was_raised = N_budget_ != N_requested_;
+    probing_requested_ = false;
+    probing_ = false;
+    probe_config_stale_ = true;
+    n_colours_ = 0;
+    probe_dist_ = 0;
+    probe_reps_ = 1;
+    probe_raise_cap_ = 0;
+    colour_cache_.clear();
+    colour_count_cache_.clear();
+    probe_adj_.clear();
+    // A budget raised to reach a colouring goes back to what was asked for.
+    if (was_raised)
+      refresh_budget_();
+    else
+      N_budget_ = N_requested_;
+  }
+  // Smallest budget at which structured probing would engage, or 0 if it never
+  // would. The budget controller uses this as a floor once probing is already
+  // on; see the note at its call site for why only then.
+  int probe_min_budget() {
+    if (!probing_requested_)
+      return 0;
+    const int p = colouring_for(1);
+    return p > 0 ? p * probe_min_reps_ : 0;
+  }
+  bool probing_active() const { return probing_; }
+  int probe_colours() const { return n_colours_; }
+  int probe_dist() const { return probe_dist_; }
+  int probe_reps() const { return probe_reps_; }
 
   double logdet() {
     switch (solver_type) {

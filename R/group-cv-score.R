@@ -545,6 +545,7 @@ score_summary <- function(x, fun, label = "model_1") {
 }
 
 
+#' @export
 print.ngme_group_cv <- function(x, ...) {
   m <- attr(x, "method")
   cat("Leave-group-out cross-validation\n")

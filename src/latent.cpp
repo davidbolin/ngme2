@@ -186,6 +186,21 @@ Latent::Latent(const Rcpp::List &model_list, unsigned long seed)
   int solver_type = Rcpp::as<int>(model_list["solver_type"]);
   n_trace_iter_ = n_trace_iter;
   solver_type_ = solver_type;
+  trace_probing_ = model_list.containsElementNamed("trace_probing")
+                       ? Rcpp::as<bool>(model_list["trace_probing"])
+                       : true;
+  trace_probing_max_dist_ =
+      model_list.containsElementNamed("trace_probing_max_dist")
+          ? Rcpp::as<int>(model_list["trace_probing_max_dist"])
+          : 4;
+  trace_probing_max_colours_ =
+      model_list.containsElementNamed("trace_probing_max_colours")
+          ? Rcpp::as<int>(model_list["trace_probing_max_colours"])
+          : 0;
+  trace_probing_raise_budget_ =
+      model_list.containsElementNamed("trace_probing_raise_budget")
+          ? Rcpp::as<double>(model_list["trace_probing_raise_budget"])
+          : 1.0;
   selinv_max_fill_ = model_list.containsElementNamed("selinv_max_fill")
                          ? Rcpp::as<double>(model_list["selinv_max_fill"])
                          : 4.0;
@@ -774,6 +789,10 @@ void Latent::update_each_iter(bool need_precond) {
   uopts.robust_reanalyze = robust_;
   uopts.n_trace_iter = n_trace_iter_;
   uopts.solver_type = solver_type_;
+  uopts.trace_probing = trace_probing_;
+  uopts.trace_probing_max_dist = trace_probing_max_dist_;
+  uopts.trace_probing_max_colours = trace_probing_max_colours_;
+  uopts.trace_probing_raise_budget = trace_probing_raise_budget_;
   uopts.selinv_max_fill = selinv_max_fill_;
   uopts.selinv_cost_ratio = selinv_cost_ratio_;
   uopts.debug = debug;

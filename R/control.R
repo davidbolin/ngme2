@@ -216,6 +216,65 @@
 #'   estimate, and the budget is sized off the worst-served parameter, which
 #'   raises it anyway. Measure before lowering it.
 #' @param trace_adapt_min,trace_adapt_max bounds on the adapted probe count.
+#' @param trace_adapt_rule how \code{trace_adapt} sizes the probe budget.
+#'   \describe{
+#'     \item{"cost"}{(default) hold the budget through the search and size it in
+#'       the polish to minimise the variance of the reported estimate per unit
+#'       of work: \eqn{N^* = \sqrt{(P/V_{gibbs})(a/b)}}, capped where the probes
+#'       cost as much as the rest of a pass. Under this rule an all-Gaussian
+#'       Rao-Blackwell fit -- where the probes are the only gradient noise --
+#'       also gets the cheapest usable colouring from the first iteration.}
+#'     \item{"share"}{size the budget so the trace estimator carries
+#'       \code{trace_adapt_frac} of the gradient variance, retuned throughout
+#'       the search. The behaviour before the cost rule existed.}
+#'   }
+#'
+#'   \code{"share"} targets a share of a quantity that contains the thing being
+#'   controlled, so on a converging fit it reduces to holding probe noise to a
+#'   fraction of the drift, and the budget climbs to \code{trace_adapt_max}
+#'   whatever it measures. \code{"cost"} has no such hole and responds to a
+#'   better estimator by asking for fewer probes.
+#'
+#'   Two limits. A fit that never converges never polishes, so its budget stays
+#'   where the search put it -- fine unless the probes are what is holding it
+#'   back; \code{"share"} is the fallback if a fit needs its budget to grow.
+#'   And the cost model treats the per-probe cost as constant when wider probe
+#'   blocks are cheaper per column, so it under-spends rather than over-spends.
+#' @param trace_probing structure the Hutchinson probes against the sparsity of
+#'   the model rather than drawing them densely (default \code{TRUE}).
+#'
+#'   The error of a Hutchinson estimate is carried by the off-diagonal terms,
+#'   and no choice of probe distribution removes them. What does is the support:
+#'   colour the graph of the precision so that two indices share a colour only
+#'   when they are several edges apart, and give each probe signs on one colour
+#'   class only. The surviving terms are pairs within a class, whose entry of
+#'   the inverse has already decayed. Still exactly unbiased; the variance falls
+#'   geometrically in the colouring distance where more dense probes buy only
+#'   \eqn{1/\sqrt{N}}.
+#'
+#'   It does not raise the probe count: the distance is the largest whose colour
+#'   count fits the budget in force, leftover budget goes into repeat sign draws,
+#'   and a budget too small for a distance-1 colouring falls back to dense
+#'   probes. The colour count is set by the mesh's local connectivity, not its
+#'   size, so the same budget buys the same structure at any \code{n}.
+#'
+#'   The gain is in the block-precision traces and \eqn{tr(K^{-1} dK)}. The
+#'   Hessian pair \eqn{tr(K^{-1}K_k K^{-1}K_j)} gains little -- two inverses
+#'   roughly double the decay length -- but rides the same probe block.
+#' @param trace_probing_max_dist largest colouring distance \code{trace_probing}
+#'   may consider (default 4). The budget bounds the probe count either way, so
+#'   this only widens the search for a usable colouring; each colouring is
+#'   computed once per sparsity pattern and cached.
+#' @param trace_probing_raise_budget the most \code{n_trace_iter} may be
+#'   multiplied by to reach the smallest budget at which \code{trace_probing}
+#'   engages (default \code{1}, i.e. never). A colouring costs one probe per
+#'   colour and that count is a property of the mesh, so a small
+#'   \code{n_trace_iter} can sit below the point where any colouring fits.
+#'   Raising this lets the budget climb to that point and no further, bounded
+#'   also by \code{trace_adapt_max}; a bound below the floor raises nothing
+#'   rather than raising partway. It is off by default because the extra probes
+#'   were measured to buy accuracy but not convergence. Ignored under
+#'   \code{trace_adapt_rule = "cost"}, which makes this decision itself.
 #'
 #' @param verbose print estimation
 #' @param store_traj store the optimizer trajectory for diagnostics (set FALSE to reduce memory)
@@ -321,6 +380,10 @@ control_opt <- function(
     trace_adapt_every = 100L,
     trace_adapt_min = 5L,
     trace_adapt_max = 200L,
+    trace_adapt_rule = c("cost", "share"),
+    trace_probing = TRUE,
+    trace_probing_max_dist = 4L,
+    trace_probing_raise_budget = 1,
     n_trace_iter_k = NA_integer_,
     trace_adapt_k = FALSE,
     sampling_strategy = "all",
@@ -525,6 +588,23 @@ control_opt <- function(
         (stepsize_schedule_alpha > 0.5 && stepsize_schedule_alpha < 1)
   )
 
+  trace_adapt_rule <- match.arg(trace_adapt_rule)
+  stopifnot(
+    "trace_probing must be a single TRUE or FALSE" =
+      is.logical(trace_probing) && length(trace_probing) == 1 &&
+        !is.na(trace_probing),
+    "trace_probing_max_dist must be a positive integer scalar" =
+      is.numeric(trace_probing_max_dist) &&
+        length(trace_probing_max_dist) == 1 &&
+        is.finite(trace_probing_max_dist) && trace_probing_max_dist >= 1,
+    "trace_probing_raise_budget must be a single number >= 1" =
+      is.numeric(trace_probing_raise_budget) &&
+        length(trace_probing_raise_budget) == 1 &&
+        is.finite(trace_probing_raise_budget) &&
+        trace_probing_raise_budget >= 1
+  )
+  trace_probing_max_dist <- as.integer(trace_probing_max_dist)
+
   # variance reduction techniques (not used for now)
   {
     reduce_var <- FALSE
@@ -589,6 +669,10 @@ control_opt <- function(
     trace_adapt_every = trace_adapt_every,
     trace_adapt_min = trace_adapt_min,
     trace_adapt_max = trace_adapt_max,
+    trace_adapt_rule = trace_adapt_rule,
+    trace_probing = trace_probing,
+    trace_probing_max_dist = trace_probing_max_dist,
+    trace_probing_raise_budget = trace_probing_raise_budget,
     n_trace_iter_k = as.integer(n_trace_iter_k),
     trace_adapt_k = trace_adapt_k,
     print_check_info = print_check_info,
@@ -809,6 +893,11 @@ update_control_ngme <- function(control_ngme, control_opt) {
   control_ngme$trace_adapt_every <- control_opt$trace_adapt_every
   control_ngme$trace_adapt_min <- control_opt$trace_adapt_min
   control_ngme$trace_adapt_max <- control_opt$trace_adapt_max
+  control_ngme$trace_adapt_rule <- control_opt$trace_adapt_rule
+  control_ngme$trace_probing <- control_opt$trace_probing
+  control_ngme$trace_probing_max_dist <- control_opt$trace_probing_max_dist
+  control_ngme$trace_probing_raise_budget <-
+    control_opt$trace_probing_raise_budget
   control_ngme$n_trace_iter_k <- control_opt$n_trace_iter_k
   control_ngme$trace_adapt_k <- control_opt$trace_adapt_k
   control_ngme$stepsize <- control_opt$stepsize

@@ -265,6 +265,24 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
         control_ngme.containsElementNamed("selinv_cost_ratio")
             ? Rcpp::as<double>(control_ngme["selinv_cost_ratio"])
             : 2.0;
+    latent_in["trace_probing"] =
+        control_ngme.containsElementNamed("trace_probing")
+            ? Rcpp::as<bool>(control_ngme["trace_probing"])
+            : true;
+    latent_in["trace_probing_max_dist"] =
+        control_ngme.containsElementNamed("trace_probing_max_dist")
+            ? Rcpp::as<int>(control_ngme["trace_probing_max_dist"])
+            : 4;
+    // The operator budget follows the QQ budget when trace_adapt_k is on, so
+    // the colouring search is capped at the same ceiling the QQ side uses.
+    latent_in["trace_probing_max_colours"] =
+        control_ngme.containsElementNamed("trace_adapt_max")
+            ? Rcpp::as<int>(control_ngme["trace_adapt_max"])
+            : n_trace_iter_k;
+    latent_in["trace_probing_raise_budget"] =
+        control_ngme.containsElementNamed("trace_probing_raise_budget")
+            ? Rcpp::as<double>(control_ngme["trace_probing_raise_budget"])
+            : 1.0;
     latent_in["nig_param_std"] = nig_param_std;
     unsigned long latent_seed = seed + (i + 1) * 1000;
     latents.push_back(std::make_shared<Latent>(latent_in, latent_seed));
@@ -343,6 +361,16 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
       trace_adapt_min = Rcpp::as<int>(cn["trace_adapt_min"]);
     if (cn.containsElementNamed("trace_adapt_max"))
       trace_adapt_max = Rcpp::as<int>(cn["trace_adapt_max"]);
+    if (cn.containsElementNamed("trace_probing"))
+      trace_probing = Rcpp::as<bool>(cn["trace_probing"]);
+    if (cn.containsElementNamed("trace_probing_max_dist"))
+      trace_probing_max_dist = Rcpp::as<int>(cn["trace_probing_max_dist"]);
+    if (cn.containsElementNamed("trace_adapt_rule"))
+      trace_adapt_cost_rule =
+          Rcpp::as<std::string>(cn["trace_adapt_rule"]) == "cost";
+    if (cn.containsElementNamed("trace_probing_raise_budget"))
+      trace_probing_raise_budget =
+          Rcpp::as<double>(cn["trace_probing_raise_budget"]);
     if (cn.containsElementNamed("trace_adapt_k"))
       trace_adapt_k = Rcpp::as<bool>(cn["trace_adapt_k"]);
   }
@@ -435,6 +463,7 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     // Initialize solver with requested backend and Hutchinson iters; QQ is SPD
     chol_QQ.init(QQ.rows(), n_trace_iter, /*symmetric*/ true, solver_type);
     chol_QQ.analyze(QQ);
+    setup_qq_probing();
     record_QQ_pattern();
     chol_QQ.compute(QQ);
     // Deliberately leave QQ_valid == false: this initial assembly is not
@@ -1835,6 +1864,16 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
 void BlockModel::adapt_trace_probes() {
   if (!rao_blackwell || !trace_adapt || grad_run_n_ < 30)
     return;
+  // Under the cost rule this function only keeps the statistics current. The
+  // search runs at a fixed budget -- its job is to reach stationarity, and
+  // probe noise was measured not to change how long that takes -- and the
+  // budget is chosen by suggest_trace_N_cost() at the polish checkpoints. The
+  // share arithmetic below would otherwise run to completion once the polish
+  // set cost_ratio_, and write a suggestion nothing ever reads.
+  if (trace_adapt_cost_rule) {
+    update_probe_var_stats();
+    return;
+  }
   // The denominator scales the probe budget so that the
   // Hutchinson variance is trace_adapt_frac of the total per-iteration gradient
   // variance, but for an all-Gaussian model with Rao-Blackwell there is a
@@ -1862,33 +1901,8 @@ void BlockModel::adapt_trace_probes() {
   // optimizer: E[(g_t - g_{t-1})^2] / 2.
   VectorXd var_tot = grad_diff_sq_ / 2.0;
 
-  // Raw probe variances in the parameter layout (Var(Hutchinson) = pv / N).
-  VectorXd pv = VectorXd::Zero(n_params);
-  int pos = 0;
-  for (int li = 0; li < n_latent; ++li) {
-    int n_k = latents[li]->get_n_theta_K();
-    int n_mu = latents[li]->get_n_theta_mu();
-    int n_sig = latents[li]->get_n_theta_sigma();
-    if (li < (int)rb_probe_var_K_latent.size() &&
-        rb_probe_var_K_latent[li].size() == n_k)
-      pv.segment(pos, n_k) = rb_probe_var_K_latent[li];
-    if (li < (int)rb_probe_var_sigma_latent.size() &&
-        rb_probe_var_sigma_latent[li].size() == n_sig)
-      pv.segment(pos + n_k + n_mu, n_sig) = rb_probe_var_sigma_latent[li];
-    pos += latents[li]->get_n_params();
-  }
-  if (rb_probe_var_noise_sigma.size() == n_theta_sigma)
-    pv.segment(n_la_params + n_theta_mu, n_theta_sigma) =
-        rb_probe_var_noise_sigma;
-
-  // Smooth the probe variances too. Each is a sample variance over as few as
-  // five probes, so a single reading is far too noisy to steer on -- leaving it
-  // unsmoothed was the main reason the budget oscillated.
-  if (probe_var_ewma_.size() != n_params)
-    probe_var_ewma_ = pv;
-  else
-    probe_var_ewma_ = 0.9 * probe_var_ewma_ + 0.1 * pv;
-  pv = probe_var_ewma_;
+  update_probe_var_stats();
+  const VectorXd &pv = probe_var_ewma_;
 
   const int N_cur = std::max(1, chol_QQ.get_N_iter());
 
@@ -1924,11 +1938,157 @@ void BlockModel::adapt_trace_probes() {
 
   int N_new = (int)std::lround(N_cur * factor);
   N_new = std::min(std::max(N_new, trace_adapt_min), trace_adapt_max);
+  // No floor is applied here. The solver clamps its own budget to the probing
+  // floor (sparse_llt_solver::refresh_budget_), so a suggestion below it simply
+  // has no effect and the boundary cannot be cycled across.
   // Suggest, do not apply: parallel chains have to end up on the SAME budget,
   // and the only place they are all stopped together is the convergence
   // checkpoint, so the driver decides there. See suggested_trace_N_.
   if (N_new != N_cur)
     suggested_trace_N_ = N_new;
+}
+
+// Gather the raw probe variances into the parameter layout and smooth them.
+// Each reading is a sample variance over as few as five probes, far too noisy
+// to steer on unsmoothed -- that was the main cause of budget oscillation. Both
+// rules read the smoothed vector, and the cost rule needs it kept current
+// through the search while not acting on it, hence the split.
+void BlockModel::update_probe_var_stats() {
+  VectorXd pv = VectorXd::Zero(n_params);
+  int pos = 0;
+  for (int li = 0; li < n_latent; ++li) {
+    int n_k = latents[li]->get_n_theta_K();
+    int n_mu = latents[li]->get_n_theta_mu();
+    int n_sig = latents[li]->get_n_theta_sigma();
+    if (li < (int)rb_probe_var_K_latent.size() &&
+        rb_probe_var_K_latent[li].size() == n_k)
+      pv.segment(pos, n_k) = rb_probe_var_K_latent[li];
+    if (li < (int)rb_probe_var_sigma_latent.size() &&
+        rb_probe_var_sigma_latent[li].size() == n_sig)
+      pv.segment(pos + n_k + n_mu, n_sig) = rb_probe_var_sigma_latent[li];
+    pos += latents[li]->get_n_params();
+  }
+  if (rb_probe_var_noise_sigma.size() == n_theta_sigma)
+    pv.segment(n_la_params + n_theta_mu, n_theta_sigma) =
+        rb_probe_var_noise_sigma;
+  if (probe_var_ewma_.size() != n_params)
+    probe_var_ewma_ = pv;
+  else
+    probe_var_ewma_ = 0.9 * probe_var_ewma_ + 0.1 * pv;
+}
+
+// Size the probe budget by what it costs, not by the share of variance it
+// carries. Used from the polish on, where the reported estimate is the
+// Polyak-Ruppert average of the iterates.
+//
+// For that average Var(theta_bar_T) goes as V(N)/T, and a pass costs
+// c(N) = a + bN, so a fixed amount of work buys T = C/c(N) iterations and the
+// precision goes as V(N)c(N)/C. Minimising
+//     V(N) c(N) = (V_gibbs + P/N)(a + bN)
+// gives N* = sqrt((P / V_gibbs) * (a / b)), with P the raw probe variance
+// (Var(Hutchinson) = P/N) and V_gibbs the noise that is not from the probes.
+// Both come from quantities the share rule already computes; a/b is the cost
+// ratio taken once when the polish begins.
+//
+// The share rule instead targets Var(Hutch) = frac * var_tot, where var_tot
+// itself contains Var(Hutch) -- so it reduces to holding probe noise to a
+// fraction of the drift, which goes to zero on a converging fit, sending the
+// budget to its cap whatever it measures. This rule has no such hole, and it
+// responds to a better estimator by asking for fewer probes: structured probing
+// cuts P several-fold, so N* falls by the square root of that. Where V_gibbs is
+// negligible N* is unbounded in principle, but the objective saturates once
+// bN >> a -- past there a probe and an iteration buy the same thing, which is
+// what the cap below is.
+int BlockModel::suggest_trace_N_cost() {
+  if (!(cost_ratio_ > 0.0) || chol_QQ.is_exact_trace())
+    return -1;
+  if (probe_var_ewma_.size() != n_params || grad_diff_sq_.size() != n_params)
+    return -1;
+  const int N_cur = std::max(1, chol_QQ.get_N_iter());
+  const VectorXd var_tot = grad_diff_sq_ / 2.0;
+
+  // rho = P / V_gibbs, per parameter. A ratio of two variances of the same
+  // parameter, so it is free of that parameter's scale and the values can be
+  // compared across them without any standardisation.
+  double rho_max = 0.0;
+  for (int j = 0; j < n_params; ++j) {
+    const double P = probe_var_ewma_(j);
+    if (!(P > 0.0) || !R_finite(var_tot(j)) || !(var_tot(j) > 0.0))
+      continue;
+    const double v_probe = P / (double)N_cur;
+    // What is left once the probes are accounted for. Floored well away from
+    // zero: var_tot is itself an estimate, so the difference can come out
+    // negative or minutely positive on a fit where the probes carry everything,
+    // and rho would then be enormous for no measurable reason. The floor caps
+    // rho at 1/eps and the saturation cap below takes over from there.
+    const double v_gibbs = std::max(var_tot(j) - v_probe, 1e-3 * v_probe);
+    rho_max = std::max(rho_max, v_probe * (double)N_cur / v_gibbs);
+  }
+  if (!(rho_max > 0.0))
+    return -1;
+
+  const double n_star = std::sqrt(rho_max * cost_ratio_);
+  // Saturation: past the point where the probes cost as much as everything
+  // else, another probe and another iteration buy the same thing.
+  int N_new = (int)std::lround(std::min(n_star, cost_ratio_));
+  N_new = std::min(std::max(N_new, trace_adapt_min), trace_adapt_max);
+  // The polish only ever spends less: its job is to average, and another
+  // iteration of averaging beats another probe.
+  N_new = std::min(N_new, N_cur);
+  // But never out of probing: rho was measured under the scheme running now, so
+  // falling back to dense would give back the variance the colouring bought and
+  // the chosen budget would not deliver what it was chosen for.
+  if (chol_QQ.probing_active()) {
+    const int floor_budget = chol_QQ.probe_min_budget();
+    if (floor_budget > 0)
+      N_new = std::max(N_new, floor_budget);
+  }
+  return N_new;
+}
+
+bool BlockModel::begin_polish_trace_rule() {
+  if (!rao_blackwell || !trace_adapt || !trace_adapt_cost_rule)
+    return false;
+
+  // a/b -- probe columns per pass -- from the fill of QQ's factor, not a clock.
+  // A probe column is two triangular solves, O(nnz(L)); the pass is dominated
+  // by the factorization, O(sum_j |L(:,j)|^2); their ratio is of order nnz(L)/n.
+  // That is a property of the matrix and its ordering, so the budget it implies
+  // is the same in every run -- an elapsed-time ratio is not: the same search
+  // twice gave 63 and 20, moving the polish between 60 probes and 10. The gate
+  // for the selected inverse already computes the fill, so this is free.
+  //
+  // It underestimates a/b -- probe solves run nearer peak than the
+  // factorization, and a pass holds sampling and assembly it does not cover --
+  // so the rule asks for fewer probes than the optimum. The safe direction.
+  if (!(qq_fill_ > 0.0))
+    return false;
+  cost_ratio_ = std::max(1.0, qq_fill_);
+
+  // Steering needs the probe variance, which only whole replicates can measure
+  // -- two draws over the colouring. Ask for that only if the budget affords
+  // it: otherwise the search already sits at what a pass affords, and dropping
+  // to dense to buy a number used only to hold the budget would give back the
+  // variance the colouring was buying.
+  if (chol_QQ.probing_active()) {
+    const int p = chol_QQ.probe_colours();
+    if (p < 1 || 2 * p > chol_QQ.get_N_iter()) {
+      if (debug)
+        ngme_io::out() << "[trace_cost] holding the search budget: two draws "
+                          "over the colouring (" << 2 * p
+                       << ") exceed what a pass affords ("
+                       << (int)std::lround(cost_ratio_) << ")\n";
+      return false;
+    }
+  }
+
+  in_polish_ = true;
+  setup_qq_probing();
+  if (debug)
+    ngme_io::out() << "[trace_cost] a pass costs about " << cost_ratio_
+                   << " probe columns (fill); saturation budget "
+                   << (int)std::lround(cost_ratio_) << "\n";
+  return true;
 }
 
 void BlockModel::apply_trace_N(int N) {
@@ -1953,6 +2113,75 @@ void BlockModel::apply_trace_N(int N) {
   // change.
 }
 
+namespace {
+// The solver reports a negative spread when it could not measure one -- probing
+// with a single sign draw over the colouring. The budget controller treats a
+// non-positive reading as "nothing to steer on" and leaves the budget alone,
+// which is the right response, so map it onto zero here rather than letting a
+// negative number into the smoothed statistics.
+inline double probe_var_of(const sparse_llt_solver &s) {
+  const double v = s.last_probe_var();
+  return v > 0.0 ? v : 0.0;
+}
+
+// How many times the probe colouring may be re-sourced before probing is given
+// up on. See setup_qq_probing().
+constexpr int kMaxProbingSetups = 3;
+} // namespace
+
+void BlockModel::setup_qq_probing() {
+  if (!trace_probing) {
+    chol_QQ.disable_probing();
+    return;
+  }
+  // The colouring is a per-pattern cost, amortized over every iteration that
+  // shares the pattern -- which for almost every model is the whole fit, since
+  // the symbolic phase runs once. A pattern that keeps moving never amortizes
+  // it: a rational approximation rebuilds QQ's structure as its parameters
+  // move, and re-colouring at each symbolic phase would cost about what the
+  // probes it is trying to improve cost. Probing is dropped for the rest of
+  // the fit rather than paid for on every iteration.
+  if (++qq_probing_setups_ > kMaxProbingSetups) {
+    chol_QQ.disable_probing();
+    return;
+  }
+  // A spread can only be measured across whole replicates, so two sign draws
+  // over the colouring are what it takes to report a probe variance -- and the
+  // budget controller runs on that number. But only where a budget is actually
+  // being steered: under the cost rule the search holds its budget, so it needs
+  // no variance and one draw over one colouring will do. That is the cheapest
+  // form of probing available, and it is what the search runs on.
+  const bool need_probe_var = trace_adapt && (!trace_adapt_cost_rule || in_polish_);
+  const int min_reps = need_probe_var ? 2 : 1;
+  // No colouring larger than the largest budget this fit can reach is ever
+  // usable, so the search is capped there rather than run to completion on a
+  // graph too dense for this to pay.
+  const int max_colours =
+      std::max(chol_QQ.get_N_iter(), trace_adapt ? trace_adapt_max : 1);
+  // Whether to pay the colouring floor. It is a hard floor: a colouring must be
+  // used whole, and any partition coarser than distance-1 measures the same as
+  // dense, so there is no cheaper form of probing to fall back on.
+  //
+  // For an all-Gaussian Rao-Blackwell fit the answer needs no measurement --
+  // the gradient uses the conditional mean of W and nothing else is sampled, so
+  // the probes are its only randomness and the floor is worth paying at once.
+  // Elsewhere the Gibbs sampling carries noise the probes cannot remove, so the
+  // caller's budget stands and the cost rule decides in the polish.
+  const bool probes_are_the_only_noise = all_gaussian && rao_blackwell;
+  const int requested = chol_QQ.get_requested_N_iter();
+  const int raise_cap =
+      trace_adapt_cost_rule
+          ? ((!in_polish_ && probes_are_the_only_noise)
+                 ? std::max(trace_adapt_max, requested)
+                 : 0)
+          : (trace_probing_raise_budget > 1.0
+                 ? std::min((int)std::floor(trace_probing_raise_budget * requested),
+                            trace_adapt_max)
+                 : 0);
+  chol_QQ.set_probing_source(QQ, trace_probing_max_dist, max_colours, min_reps,
+                             raise_cap);
+}
+
 // Selected inversion is exact and, for a low-fill factor, cheaper than even a
 // handful of probes. The fill ratio is the operational test and is decided once per fit.
 double BlockModel::qq_trace(const SparseMatrix<double> &T, double &probe_var) {
@@ -1965,6 +2194,7 @@ double BlockModel::qq_trace(const SparseMatrix<double> &T, double &probe_var) {
       ruled_out = fr > selinv_max_fill;
     }
     selinv_state_ = ruled_out ? 0 : 1;
+    qq_fill_ = fr;
     if (debug)
       ngme_io::out() << "[selinv] fill_ratio=" << fr
                   << " -> " << (selinv_state_ ? "exact selected inverse"
@@ -1986,8 +2216,28 @@ double BlockModel::qq_trace(const SparseMatrix<double> &T, double &probe_var) {
     chol_QQ.disable_selinv();
   }
   double v = chol_QQ.trace(T, rng());
-  probe_var = chol_QQ.last_probe_var();
+  probe_var = probe_var_of(chol_QQ);
+  report_probing();
   return v;
+}
+
+void BlockModel::report_probing() {
+  if (!debug)
+    return;
+  const int d = chol_QQ.probing_active() ? chol_QQ.probe_dist() : 0;
+  const int r = chol_QQ.probing_active() ? chol_QQ.probe_reps() : 0;
+  if (d == probing_reported_dist_ && r == probing_reported_reps_)
+    return;
+  probing_reported_dist_ = d;
+  probing_reported_reps_ = r;
+  if (d > 0)
+    ngme_io::out() << "[probing] distance=" << d
+                   << " colours=" << chol_QQ.probe_colours() << " reps=" << r
+                   << " probes=" << chol_QQ.get_n_probes() << " of budget "
+                   << chol_QQ.get_N_iter() << "\n";
+  else
+    ngme_io::out() << "[probing] off: " << chol_QQ.get_n_probes()
+                   << " dense Rademacher probes\n";
 }
 
 double BlockModel::qq_trace_factored_shared(const SparseMatrix<double> &A,
@@ -1997,7 +2247,8 @@ double BlockModel::qq_trace_factored_shared(const SparseMatrix<double> &A,
                                             bool have_BQU, double &probe_var) {
   if (selinv_state_ == 0 && have_BQU) {
     double v = chol_QQ.trace_factored_with(A, d, BQU);
-    probe_var = chol_QQ.last_probe_var();
+    probe_var = probe_var_of(chol_QQ);
+    report_probing();
     return v;
   }
   return qq_trace_factored(A, d, B, probe_var);
@@ -2019,7 +2270,8 @@ double BlockModel::qq_trace_factored(const SparseMatrix<double> &A,
     return qq_trace(T, probe_var);
   }
   double v = chol_QQ.trace_factored(A, d, B, rng());
-  probe_var = chol_QQ.last_probe_var();
+  probe_var = probe_var_of(chol_QQ);
+  report_probing();
   return v;
 }
 
@@ -2493,6 +2745,7 @@ void BlockModel::update_QQ() {
     if (QQ_pattern_changed()) {
       ngme_counters::bump(ngme_counters::QQ_analyzes);
       { ngme_timing::Scope _s(ngme_timing::qq_symbolic_us()); chol_QQ.analyze(QQ); }
+      setup_qq_probing();
       record_QQ_pattern();
     }
     { ngme_timing::Scope _s(ngme_timing::qq_numeric_us()); chol_QQ.compute(QQ); }

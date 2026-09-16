@@ -9,6 +9,10 @@ sampling_cpp <- function(ngme_replicate, n, n_burnin, posterior, seed) {
     .Call(`_ngme2_sampling_cpp`, ngme_replicate, n, n_burnin, posterior, seed)
 }
 
+trace_probe_draws <- function(Q, M, n_probes, reps, probing, max_dist = 4L, min_reps = 1L, raise_cap = 0L, solver_type = 0L, seed = 1L) {
+    .Call(`_ngme2_trace_probe_draws`, Q, M, n_probes, reps, probing, max_dist, min_reps, raise_cap, solver_type, seed)
+}
+
 get_openmp_threads <- function() {
     .Call(`_ngme2_get_openmp_threads`)
 }

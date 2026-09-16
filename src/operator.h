@@ -72,6 +72,18 @@ struct UpdateOptions {
   double selinv_cost_ratio{2.0};
   // Echoes the latent's debug flag so the route chosen can be printed.
   bool debug{false};
+  // Structure the operator-side Hutchinson probes against a colouring of the
+  // graph of K rather than drawing them densely; see include/probing.h. Off
+  // restores the dense Rademacher probes exactly.
+  bool trace_probing{true};
+  int trace_probing_max_dist{4};
+  // Ceiling on the probe budget over the fit, which is also the largest
+  // colouring worth searching for. Zero means "no more than the current
+  // budget".
+  int trace_probing_max_colours{0};
+  // The most the operator probe budget may be multiplied by to reach the
+  // smallest budget at which probing engages. 1 leaves it alone.
+  double trace_probing_raise_budget{1.0};
   int solver_type{0};
   // 0 = LU of K, 1 = Cholesky of K^T K (non-symmetric operators only)
   int nonsym_solver{0};
@@ -200,6 +212,10 @@ protected:
   // fall back on the factorization.
   bool try_triangular_traces(const UpdateOptions &opts, bool want_trace,
                              bool want_HK);
+  // Structure the probe block against the graph of K, or restore dense probes.
+  void setup_K_probing(const UpdateOptions &opts);
+  // How many times the colouring has been re-sourced; see setup_K_probing().
+  int k_probing_setups_{0};
 
 public:
 

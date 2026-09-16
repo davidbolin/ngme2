@@ -75,6 +75,21 @@ public:
     return want;
   }
 
+  // Switch every replicate over to the cost-based budget rule and hand back
+  // whether any of them could. Called once, where the polish begins.
+  bool begin_polish_trace_rule() {
+    bool any = false;
+    for (int i = 0; i < n_repl; i++)
+      any = ngme_repls[i]->begin_polish_trace_rule() || any;
+    return any;
+  }
+  // The budget the cost rule wants, taken over replicates; -1 if none.
+  int suggest_trace_N_cost() {
+    int want = -1;
+    for (int i = 0; i < n_repl; i++)
+      want = std::max(want, ngme_repls[i]->suggest_trace_N_cost());
+    return want;
+  }
   void apply_trace_N(int N) {
     for (int i = 0; i < n_repl; i++)
       ngme_repls[i]->apply_trace_N(N);

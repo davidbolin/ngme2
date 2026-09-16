@@ -125,7 +125,7 @@ ifneq ($(UNAME), Darwin)
 endif
 
 # TESTS = test/test-algebra.o  test/test-opt.o
-UTILS = util/GIG.o util/rgig.o util/MatrixAlgebra.o util/solver.o
+UTILS = util/GIG.o util/rgig.o util/MatrixAlgebra.o util/solver.o util/probing.o
 # $(wildcard util/*.o)
 
 LATENTS = latents/ou.o latents/matern.o latents/tensorprod.o latents/randeff.o latents/bivar.o latents/generic.o latents/generic_ns.o latents/arma.o latents/rcallback.o latents/fractional/fractional_operators.o

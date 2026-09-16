@@ -38,6 +38,26 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// trace_probe_draws
+Rcpp::List trace_probe_draws(const Eigen::SparseMatrix<double, 0, int>& Q, const Eigen::SparseMatrix<double, 0, int>& M, int n_probes, int reps, bool probing, int max_dist, int min_reps, int raise_cap, int solver_type, unsigned int seed);
+RcppExport SEXP _ngme2_trace_probe_draws(SEXP QSEXP, SEXP MSEXP, SEXP n_probesSEXP, SEXP repsSEXP, SEXP probingSEXP, SEXP max_distSEXP, SEXP min_repsSEXP, SEXP raise_capSEXP, SEXP solver_typeSEXP, SEXP seedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::SparseMatrix<double, 0, int>& >::type Q(QSEXP);
+    Rcpp::traits::input_parameter< const Eigen::SparseMatrix<double, 0, int>& >::type M(MSEXP);
+    Rcpp::traits::input_parameter< int >::type n_probes(n_probesSEXP);
+    Rcpp::traits::input_parameter< int >::type reps(repsSEXP);
+    Rcpp::traits::input_parameter< bool >::type probing(probingSEXP);
+    Rcpp::traits::input_parameter< int >::type max_dist(max_distSEXP);
+    Rcpp::traits::input_parameter< int >::type min_reps(min_repsSEXP);
+    Rcpp::traits::input_parameter< int >::type raise_cap(raise_capSEXP);
+    Rcpp::traits::input_parameter< int >::type solver_type(solver_typeSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type seed(seedSEXP);
+    rcpp_result_gen = Rcpp::wrap(trace_probe_draws(Q, M, n_probes, reps, probing, max_dist, min_reps, raise_cap, solver_type, seed));
+    return rcpp_result_gen;
+END_RCPP
+}
 // get_openmp_threads
 int get_openmp_threads();
 RcppExport SEXP _ngme2_get_openmp_threads() {
@@ -155,6 +175,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_ngme2_estimate_cpp", (DL_FUNC) &_ngme2_estimate_cpp, 2},
     {"_ngme2_sampling_cpp", (DL_FUNC) &_ngme2_sampling_cpp, 5},
+    {"_ngme2_trace_probe_draws", (DL_FUNC) &_ngme2_trace_probe_draws, 10},
     {"_ngme2_get_openmp_threads", (DL_FUNC) &_ngme2_get_openmp_threads, 0},
     {"_ngme2_set_openmp_threads", (DL_FUNC) &_ngme2_set_openmp_threads, 1},
     {"_ngme2_factorization_timing", (DL_FUNC) &_ngme2_factorization_timing, 1},

@@ -62,3 +62,4 @@ src/SuiteSparse/**/*.a
 .positai
 # compiler-generated header dependency lists (src/Makevars)
 *.d
+src/.ngme-build-flags

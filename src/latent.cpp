@@ -189,6 +189,9 @@ Latent::Latent(const Rcpp::List &model_list, unsigned long seed)
   selinv_max_fill_ = model_list.containsElementNamed("selinv_max_fill")
                          ? Rcpp::as<double>(model_list["selinv_max_fill"])
                          : 4.0;
+  selinv_cost_ratio_ = model_list.containsElementNamed("selinv_cost_ratio")
+                           ? Rcpp::as<double>(model_list["selinv_cost_ratio"])
+                           : 2.0;
   nonsym_solver_ = model_list.containsElementNamed("nonsym_solver")
                        ? Rcpp::as<int>(model_list["nonsym_solver"])
                        : 0;
@@ -772,6 +775,8 @@ void Latent::update_each_iter(bool need_precond) {
   uopts.n_trace_iter = n_trace_iter_;
   uopts.solver_type = solver_type_;
   uopts.selinv_max_fill = selinv_max_fill_;
+  uopts.selinv_cost_ratio = selinv_cost_ratio_;
+  uopts.debug = debug;
   uopts.nonsym_solver = nonsym_solver_;
   uopts.fix_mask_thetaK = ope->get_fix_mask_K();
   // Fresh probes each iteration.

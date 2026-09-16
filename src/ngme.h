@@ -64,6 +64,22 @@ public:
 
   int get_n_params() const override { return n_params; }
 
+  // Highest probe budget any replicate of this chain is asking for, or -1 if
+  // none is. The replicates share one budget for the same reason the chains do
+  // -- they contribute to one gradient, so the budget adequate for the noisiest
+  // of them governs -- hence the maximum rather than a mean.
+  int suggest_trace_N() const {
+    int want = -1;
+    for (int i = 0; i < n_repl; i++)
+      want = std::max(want, ngme_repls[i]->get_suggested_trace_N());
+    return want;
+  }
+
+  void apply_trace_N(int N) {
+    for (int i = 0; i < n_repl; i++)
+      ngme_repls[i]->apply_trace_N(N);
+  }
+
   vector<Rcpp::List> output() const {
     sync_all_repls_if_needed(false);
     vector<Rcpp::List> output;

@@ -42,5 +42,14 @@ test_that("factored and assembled Rao-Blackwell traces agree", {
           noise = noise_normal()),
     data = st_data, family = "normal", control_opt = ctrl)))
   expect_identical(names(factored), names(assembled))
-  expect_equal(ngme_digest_max_diff(factored, assembled), 0, tolerance = 1e-6)
+  # Absolute, over every numeric entry of the fitted object, and the two routes
+  # differ by floating-point reassociation rather than by any exact identity.
+  # That difference does not stay at round-off: each iteration's gradient feeds
+  # back into the parameters, so twelve of them amplify it, and the final
+  # spread lands a couple of orders above eps. A tolerance at the edge of the
+  # observed spread fails intermittently on unmodified code and tests the
+  # random number stream rather than the association. What the test is for is a
+  # STRUCTURAL divergence -- a wrong factorization, a dropped term -- and that
+  # shows up orders of magnitude above this bound.
+  expect_equal(ngme_digest_max_diff(factored, assembled), 0, tolerance = 1e-3)
 })

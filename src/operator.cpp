@@ -188,6 +188,15 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
     ~OptsGuard() { *slot = nullptr; }
   } _og{&cur_opts_};
 
+  // Every probe drawn anywhere below this point is solved against K, not
+  // against the block precision -- this class holds no other solver. Marking
+  // the whole call rather than just the triangular-trace helper is the point:
+  // the general trace path further down (and the H_K block) probe outside that
+  // helper, so with the marker set only there those solves were attributed to
+  // the block-precision counter and k_probe_solves stayed at zero however hard
+  // the operator was probing.
+  ngme_counters::probe_role_scope _role(ngme_counters::probe_role::op);
+
   // 1) Build K and Z once at base theta
   { ngme_timing::Scope _s(ngme_timing::op_build_us()); build_KZ(theta); }
 
@@ -496,23 +505,65 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
         trace_vals(j) = 0.0;
         continue;
       }
-      // Exact trace from the selected inverse when K's factor is low-fill,
-      // Hutchinson probes otherwise. The gate mirrors BlockModel::qq_trace:
-      // the free lower bound on the fill first, the real ratio only if that
-      // passes (computing it costs a factorization on a non-eigen backend).
+      // Exact trace from the selected inverse, or Hutchinson probes, decided
+      // once per fit and latched.
       if (selinv_state_ < 0) {
-        // The operator's factor and QQ's are nowhere near each other in
-        // density so the shared threshold rarely admits the exact route here even when
-        // it would be affordable.
+        // The operator is decided by COUNTING the two routes against each
+        // other, where BlockModel::qq_trace is decided by a fill threshold.
+        // The two sides are not symmetric. Counting only settles the question
+        // when it is not close, because the routes reach very different
+        // fractions of peak throughput per operation -- a probe is a triangular
+        // solve over a block of right-hand sides and vectorises better the
+        // denser the factor gets, while the Takahashi recursion is a scalar
+        // scatter/gather. On the block precision that spread is wider than the
+        // margin between the models, so a count cannot arbitrate and the fill
+        // threshold stays. Here it is not close: the operator's factor is far
+        // sparser than the probes it replaces, its traces are taken once per
+        // optimizer iteration rather than once per Gibbs pass, and for an
+        // operator that factors into a tensor product the exact route
+        // decomposes through the factors. Every model tested clears the
+        // threshold by more than an order of magnitude.
+        //
+        // The free fill bound is kept ahead of the count purely as a rail: the
+        // count needs the factor, and forming one on a hopeless matrix is the
+        // cost the rail exists to avoid.
         const double max_fill = opts.selinv_max_fill;
         double fr = cholK_solver.fill_lower_bound();
         bool ruled_out =
             !cholK_solver.selinv_supported() || fr > max_fill;
         if (!ruled_out) {
-          fr = cholK_solver.fill_ratio();
-          ruled_out = fr > max_fill;
+          // Operation counts rather than timings: the choice must be a
+          // function of the matrices, not of how busy the machine is, or the
+          // same fit stops being reproducible -- and a reproducibility test
+          // asserts exactly that. The exact
+          // route is charged the Takahashi recursion that forms the selected
+          // inverse, not the size of the result -- the two are unrelated, since
+          // the selected inverse carries the factor's pattern whatever it cost
+          // to build.
+          const long long nnz_L = cholK_solver.factor_nnz();
+          const long long build = cholK_solver.selinv_build_flops();
+          const bool sel_ok = (nnz_L > 0 && build > 0);
+          const double m = std::max(1.0, (double)n_theta_K);
+          const long long dim = std::max<long long>(1, (long long)K.rows());
+          const double reuse = (double)nnz_L / (double)dim;
+          const double t_sel = (double)build + m * reuse;
+          const double N = (double)std::max(1, cholK_solver.get_N_iter());
+          // One probe block serves every parameter, so the solves are charged
+          // once rather than once per parameter; a probe is a forward and a
+          // back substitution, hence the 2.
+          const double t_probe = 2.0 * N * (double)nnz_L + N * m * reuse;
+          ruled_out = !(sel_ok && t_probe > 0.0 &&
+                        t_sel <= opts.selinv_cost_ratio * t_probe);
+          if (opts.debug)
+            Rprintf("[selinv K] nnz_L=%lld build=%lld m=%g N=%g exact=%g "
+                    "probes=%g\n",
+                    nnz_L, build, m, N, t_sel, t_probe);
         }
         selinv_state_ = ruled_out ? 0 : 1;
+        if (opts.debug)
+          Rprintf("[selinv K] fill>=%g -> %s\n", fr,
+                  selinv_state_ ? "exact selected inverse"
+                                : "Hutchinson probes");
         if (selinv_state_ == 0)
           cholK_solver.disable_selinv(); // hand back the factor and S_sel
       }

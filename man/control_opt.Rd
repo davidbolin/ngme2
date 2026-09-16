@@ -29,11 +29,15 @@ control_opt(
   polish_decay_alpha = 0.6,
   polish_decay_t0 = 13.5,
   selinv_max_fill = 4,
+  selinv_cost_ratio = 2,
+  n_fisher_probes = NA_integer_,
+  selinv_max_fill_k = Inf,
   trace_adapt = TRUE,
   trace_adapt_frac = 0.1,
   trace_adapt_every = 100L,
   trace_adapt_min = 5L,
   trace_adapt_max = 200L,
+  n_trace_iter_k = NA_integer_,
   trace_adapt_k = FALSE,
   sampling_strategy = "all",
   solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
@@ -162,11 +166,46 @@ polish, as \code{(1 + i/polish_decay_t0)^-alpha} in the polish iterations
 \item{polish_decay_t0}{timescale of that decay, in polish iterations.}
 
 \item{selinv_max_fill}{use the exact selected (Takahashi) inverse for the
-Rao-Blackwell traces when the Cholesky factor of QQ has \code{nnz(L)/n} at or below
-this, and Hutchinson probes otherwise. Triangular operators (ar1, ou, arma) and 1-d
-meshes give a banded QQ with a ratio near 2-3, where the exact route is both cheaper
-and free of probe noise; a 2-d mesh is nearer 35, where it is far slower. Set to 0 to
-always probe.}
+Rao-Blackwell traces of the block precision when the Cholesky factor of QQ
+has \code{nnz(L)/n} at or below this, and Hutchinson probes otherwise.
+Triangular operators (ar1, ou, arma) and 1-d meshes give a banded QQ with a
+ratio near 2-3, where the exact route is both cheaper and free of probe
+noise; a 2-d mesh is nearer 35, where it is far slower. Set to 0 to always
+probe. This is a fill threshold rather than a cost comparison on purpose:
+the two routes reach very different fractions of peak throughput per
+operation -- a probe is a triangular solve over a block of right-hand sides
+and vectorises better the denser the factor gets, while the Takahashi
+recursion is a scalar scatter/gather -- and the spread between them is
+wider than the margin that separates the models wanting one route from
+those wanting the other, so counting operations does not decide it.}
+
+\item{selinv_cost_ratio}{how much dearer one exact selected inverse of the
+OPERATOR may be than the probe budget it replaces and still be preferred.
+This governs the operator traces only; the block precision is gated by
+\code{selinv_max_fill}. Both sides are counted in operations, read off the
+factor's sparsity pattern once at the start of a fit, and the choice is
+then fixed for the run. Counting rather than timing is what keeps a fit
+reproducible: a rule that consults the clock can decide differently on a
+busy machine. Above one because the exact route carries no estimation
+variance, which probing cannot buy at any finite budget. The comparison is
+only trusted here because on the operator side it is not close -- the
+operator's factor is far sparser than the probes it replaces, and every
+model tested clears the threshold by more than an order of magnitude.}
+
+\item{n_fisher_probes}{probe budget for the expected-information estimate the
+preconditioner uses for the measurement scale. \code{NA} (the default)
+follows \code{n_trace_iter}, which is how it has been sized until now --
+but that budget is chosen against gradient variance, which is a different
+target, so the two can be set apart.}
+
+\item{selinv_max_fill_k}{the same bound for the operator traces, and
+\code{Inf} by default, so there the operation-count comparison always
+decides and no fill threshold pre-empts it. The operator can afford that
+where the block precision cannot: its traces are taken once per optimizer
+iteration, whereas the block-precision traces are retaken on every Gibbs
+pass, so the exact route is charged far less over a run, and for operators
+that factor into a tensor product it decomposes through the factors.
+Set a finite value to restore a hard gate.}
 
 \item{trace_adapt}{size the Hutchinson probe count automatically (default \code{TRUE}).
 The estimator's own variance falls as 1/N and is measured from the spread of the probes,
@@ -181,9 +220,30 @@ this, so the achieved share settles between roughly \code{0.5 * trace_adapt_frac
 \code{2 * trace_adapt_frac}. Updates are damped and capped at 25\% per step, so the
 budget approaches its target over several updates rather than jumping.}
 
-\item{trace_adapt_every}{how many iterations between probe-budget updates.}
+\item{trace_adapt_every}{minimum iterations between probe-budget updates,
+rounded up to the next convergence checkpoint. The budget is changed only
+at those checkpoints, because that is where the parallel chains meet: every
+chain is given the same budget, since \code{R_hat} reads the spread between
+chains as evidence about the spread within them and chains probing at
+different budgets carry different estimator variances.
+
+Because each update is capped at 25\%, this also sets how far the budget can
+travel in a run, and the default is deliberately slow: it leaves the budget
+near where it started. Lowering it lets the budget reach what the
+measurement asks for, which is worth doing when the trace estimator is the
+only noise in the gradient -- an all-Gaussian Rao-Blackwell fit -- and is
+wasted work when it is not. With a non-Gaussian noise the Gibbs sampling
+carries most of the gradient variance, extra probes do not move the
+estimate, and the budget is sized off the worst-served parameter, which
+raises it anyway. Measure before lowering it.}
 
 \item{trace_adapt_min, trace_adapt_max}{bounds on the adapted probe count.}
+
+\item{n_trace_iter_k}{probe budget for the operator traces, which feed both
+the gradient of the operator parameters and the operator block of the
+preconditioner. \code{NA} (the default) uses \code{n_trace_iter}. A probe
+against the operator is cheaper than one against the full precision, so the
+two need not be carried at the same value.}
 
 \item{trace_adapt_k}{whether \code{trace_adapt} also retunes the probe budget
 used for the operator traces, which enter the gradient of the operator

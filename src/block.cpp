@@ -42,12 +42,17 @@ namespace ngme_counters {
 std::atomic<long long> QQ_builds{0};
 std::atomic<long long> probe_solves{0};
 std::atomic<long long> gibbs_passes{0};
+std::atomic<long long> fisher_solves{0};
+std::atomic<long long> k_probe_solves{0};
+thread_local probe_role current_probe_role = probe_role::qq;
 std::atomic<long long> QQ_analyzes{0};
 std::atomic<long long> K_analyzes{0};
 void reset_all() {
   QQ_builds.store(0, std::memory_order_relaxed);
   probe_solves.store(0, std::memory_order_relaxed);
   gibbs_passes.store(0, std::memory_order_relaxed);
+  fisher_solves.store(0, std::memory_order_relaxed);
+  k_probe_solves.store(0, std::memory_order_relaxed);
   QQ_analyzes.store(0, std::memory_order_relaxed);
   K_analyzes.store(0, std::memory_order_relaxed);
 }
@@ -124,6 +129,17 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
   // bool init_sample_W = Rcpp::as<bool>(control_ngme["init_sample_W"]);
   n_gibbs = Rcpp::as<int>(control_ngme["n_gibbs_samples"]);
   int n_trace_iter = Rcpp::as<int>(control_ngme["n_trace_iter"]);
+  // The operator traces are solved against K, not against the full block
+  // precision, so they cost a fraction of a QQ probe while feeding both the
+  // gradient of the operator parameters and the H_K block of the
+  // preconditioner. Carrying them at a separate budget is what lets the spend
+  // be split between the two rather than tied one-to-one.
+  int n_trace_iter_k = n_trace_iter;
+  if (control_ngme.containsElementNamed("n_trace_iter_k")) {
+    Rcpp::IntegerVector v = control_ngme["n_trace_iter_k"];
+    if (v.size() > 0 && v[0] != NA_INTEGER && v[0] > 0)
+      n_trace_iter_k = v[0];
+  }
   auto map_solver_type = [](int backend, int factor) {
     switch (backend) {
     case 0: // eigen
@@ -229,16 +245,26 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     Rcpp::List latent_in = Rcpp::as<Rcpp::List>(latents_in[i]);
     latent_in["solver_type"] = solver_type;
     latent_in["nonsym_solver"] = nonsym_solver;
-    latent_in["n_trace_iter"] = n_trace_iter;
+    latent_in["n_trace_iter"] = n_trace_iter_k;
     // The operator traces use the same fill gate as the QQ traces do, so the
     // threshold has to reach Operator::update_all as well. Read from
     // control_ngme here rather than from the member, which is assigned further
     // down in this constructor.
+    // The operator traces are taken once per optimizer iteration, while the
+    // block-precision traces are retaken on every Gibbs pass. The exact path
+    // therefore costs the operator far less over a run, so the two gates are
+    // separate rather than sharing one threshold.
     latent_in["selinv_max_fill"] =
-        control_ngme.containsElementNamed("selinv_max_fill")
+        control_ngme.containsElementNamed("selinv_max_fill_k")
+            ? Rcpp::as<double>(control_ngme["selinv_max_fill_k"])
+        : control_ngme.containsElementNamed("selinv_max_fill")
             ? Rcpp::as<double>(control_ngme["selinv_max_fill"])
             : 4.0;
     latent_in["robust"] = robust;
+    latent_in["selinv_cost_ratio"] =
+        control_ngme.containsElementNamed("selinv_cost_ratio")
+            ? Rcpp::as<double>(control_ngme["selinv_cost_ratio"])
+            : 2.0;
     latent_in["nig_param_std"] = nig_param_std;
     unsigned long latent_seed = seed + (i + 1) * 1000;
     latents.push_back(std::make_shared<Latent>(latent_in, latent_seed));
@@ -304,19 +330,21 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
       debug = Rcpp::as<bool>(cn["debug"]);
     if (cn.containsElementNamed("selinv_max_fill"))
       selinv_max_fill = Rcpp::as<double>(cn["selinv_max_fill"]);
+    if (cn.containsElementNamed("n_fisher_probes")) {
+      Rcpp::IntegerVector v = cn["n_fisher_probes"];
+      if (v.size() > 0 && v[0] != NA_INTEGER && v[0] > 0)
+        n_fisher_probes_ = v[0];
+    }
     if (cn.containsElementNamed("trace_adapt"))
       trace_adapt = Rcpp::as<bool>(cn["trace_adapt"]);
     if (cn.containsElementNamed("trace_adapt_frac"))
       trace_adapt_frac = Rcpp::as<double>(cn["trace_adapt_frac"]);
-    if (cn.containsElementNamed("trace_adapt_every"))
-      trace_adapt_every = Rcpp::as<int>(cn["trace_adapt_every"]);
     if (cn.containsElementNamed("trace_adapt_min"))
       trace_adapt_min = Rcpp::as<int>(cn["trace_adapt_min"]);
     if (cn.containsElementNamed("trace_adapt_max"))
       trace_adapt_max = Rcpp::as<int>(cn["trace_adapt_max"]);
     if (cn.containsElementNamed("trace_adapt_k"))
       trace_adapt_k = Rcpp::as<bool>(cn["trace_adapt_k"]);
-    trace_adapt_countdown_ = trace_adapt_every;
   }
 
   noise_mu = B_mu * theta_mu;
@@ -861,7 +889,8 @@ MatrixXd BlockModel::fisher_theta_sigma() {
   }
 
   const SparseMatrix<double> &H = get_sqrt_AtSVA();
-  const int N = std::max(1, chol_QQ.get_N_iter());
+  const int N = std::max(1, n_fisher_probes_ > 0 ? n_fisher_probes_
+                                                : chol_QQ.get_N_iter());
   std::mt19937 gen(static_cast<unsigned>(rng()));
   std::bernoulli_distribution coin(0.5);
   // Dropped observations get a zero probe entry, which removes them exactly.
@@ -872,6 +901,10 @@ MatrixXd BlockModel::fisher_theta_sigma() {
                                                   : (coin(gen) ? 1.0 : -1.0);
   auto applyN = [&](const MatrixXd &Y) {
     MatrixXd rhs = H.transpose() * Y;
+    // Counted separately from the trace probes: same unit of work, but a
+    // different consumer, and lumping them together hides whether the traces
+    // are still probing.
+    ngme_counters::add(ngme_counters::fisher_solves, N);
     MatrixXd s = chol_QQ.solve(rhs);
     return MatrixXd(Y - H * s);
   };
@@ -1815,9 +1848,13 @@ void BlockModel::adapt_trace_probes() {
   // trace_adapt_max. Whether more probes are worth their cost depends on the
   // operator, and for the tested cases, it seems like the probes are so cheap
   // that it is worth it as it reduces the total number of iterations needed.
-  if (--trace_adapt_countdown_ > 0)
-    return;
-  trace_adapt_countdown_ = trace_adapt_every;
+  // No countdown here. This runs every pass so the smoothed statistics stay
+  // current and the suggestion tracks them; WHEN a suggestion is acted on is
+  // the driver's business, and it acts at the convergence checkpoints where the
+  // chains can be given one budget between them. Keeping a countdown here as
+  // well would put a second, invisible cadence behind that one -- and this one
+  // counted CALLS, of which there is one per Gibbs pass, so it ran faster for a
+  // non-Gaussian noise than for a Gaussian one without saying so.
   if (chol_QQ.is_exact_trace())
     return; // already exact, nothing to gain
 
@@ -1887,22 +1924,33 @@ void BlockModel::adapt_trace_probes() {
 
   int N_new = (int)std::lround(N_cur * factor);
   N_new = std::min(std::max(N_new, trace_adapt_min), trace_adapt_max);
-  if (N_new != N_cur) {
-    if (debug)
-      ngme_io::out() << "[trace_adapt] r=" << r_max << " probes " << N_cur
-                  << " -> " << N_new << "\n";
-    last_trace_N_ = N_new;
-    chol_QQ.set_N_iter(N_new);
-    // The operator-side budget has to move with it. cholK_solver is
-    // initialised once, so a budget left behind here stays at its construction
-    // value for the whole run however far the QQ budget travels -- and those
-    // probes feed the gradient of theta_K directly.
-    // Parked rather than applied: this runs inside the gradient computation,
-    // and the operator's probe block is cached across Gibbs passes.
-    if (trace_adapt_k)
-      pending_k_budget_ = N_new;
-    // statistics are exponentially weighted and stay valid across the change
-  }
+  // Suggest, do not apply: parallel chains have to end up on the SAME budget,
+  // and the only place they are all stopped together is the convergence
+  // checkpoint, so the driver decides there. See suggested_trace_N_.
+  if (N_new != N_cur)
+    suggested_trace_N_ = N_new;
+}
+
+void BlockModel::apply_trace_N(int N) {
+  if (N < 1 || chol_QQ.is_exact_trace())
+    return;
+  suggested_trace_N_ = -1; // consumed
+  if (N == chol_QQ.get_N_iter())
+    return;
+  if (debug)
+    ngme_io::out() << "[trace_adapt] probes " << chol_QQ.get_N_iter() << " -> "
+                   << N << "\n";
+  chol_QQ.set_N_iter(N);
+  // The operator-side budget has to move with it. cholK_solver is initialised
+  // once, so a budget left behind here stays at its construction value for the
+  // whole run however far the QQ budget travels -- and those probes feed the
+  // gradient of theta_K directly. Parked rather than applied: the operator
+  // caches a factored probe block across Gibbs passes, so it must not be
+  // resized from outside that computation; update_all() picks the value up.
+  if (trace_adapt_k)
+    pending_k_budget_ = N;
+  // The trace statistics are exponentially weighted and stay valid across the
+  // change.
 }
 
 // Selected inversion is exact and, for a low-fill factor, cheaper than even a

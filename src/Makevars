@@ -46,7 +46,6 @@ PKG_CXXFLAGS += $(SHLIB_OPENMP_CXXFLAGS)
 # failing to build. -MP keeps a deleted header from breaking the next build.
 PKG_CXXFLAGS += -MMD -MP
 
-
 ## NB: INSTALL does not clean subdirectories between subarchitectures
 $(sslib1):
 	cd $(@D) && $(MAKE) clean all $(ssenv)
@@ -139,9 +138,37 @@ OBJECTS = $(sslib) RcppExports.o prior.o noise.o sample_rGIG.o estimate.o optimi
 DEPFILES = $(filter %.d,$(OBJECTS:.o=.d))
 -include $(DEPFILES)
 
+# The .d files rebuild an object when a header it includes changes, but nothing
+# rebuilds it when the FLAGS change. That gap is not theoretical here: pkgload
+# -- devtools::test(), load_all(), testthat::test_local() -- compiles THIS
+# directory with its own flags, leaving objects built without -DNDEBUG behind,
+# and a later R CMD INSTALL reuses them. The library then links
+# assertion-enabled and assertion-disabled objects together, behaves like
+# neither build, and presents as memory corruption rather than as a stale
+# object. Stamping the flags into a file every object depends on turns that
+# silent mix into an ordinary rebuild.
+#
+# ALL_CPPFLAGS / ALL_CXXFLAGS are R's fully assembled compile flags and are
+# where -DNDEBUG actually lives; the bare CPPFLAGS/CXXFLAGS are empty here and
+# would stamp nothing that matters. They must be expanded in a RECIPE, since R
+# assembles them only after reading this file -- at parse time they stamp an
+# empty string and catch nothing. The stamp is rewritten only when the flags
+# really differ, so an unchanged build still recompiles nothing.
+NGME_FLAGSTAMP = .ngme-build-flags
+NGME_FLAGS = $(subst ",,$(CXX)|$(ALL_CPPFLAGS)|$(ALL_CXXFLAGS))
+.PHONY: ngme-flagcheck
+$(NGME_FLAGSTAMP): ngme-flagcheck
+	@printf '%s' '$(NGME_FLAGS)' | cmp -s - $@ 2>/dev/null || \
+	  printf '%s' '$(NGME_FLAGS)' > $@
+
+# Only this package's own objects; the SuiteSparse archives are built by their
+# own recipes with their own flags and must not be dragged into this.
+$(filter-out $(sslib),$(OBJECTS)): $(NGME_FLAGSTAMP)
+
 # Provide recipe to remove all objects
 clean:
 	@rm -f *.o util/*.o latents/*.o latents/fractional/*.o
 	@rm -f *.d util/*.d latents/*.d latents/fractional/*.d
+	@rm -f $(NGME_FLAGSTAMP)
 
 .PHONY: clean

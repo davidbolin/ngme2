@@ -62,7 +62,11 @@ void sparse_llt_solver::ensure_QU(unsigned int seed) {
     return;
   ensure_U(seed);
   { ngme_timing::Scope _s(ngme_timing::rb_qu_solve_us()); QU = solve(U); }
-  ngme_counters::add(ngme_counters::probe_solves, N_iter);
+  ngme_counters::add(ngme_counters::current_probe_role ==
+                             ngme_counters::probe_role::op
+                         ? ngme_counters::k_probe_solves
+                         : ngme_counters::probe_solves,
+                     N_iter);
   QU_computed = 1;
 }
 
@@ -212,6 +216,45 @@ double sparse_llt_solver::fill_ratio() {
       solver_type == 0 ? R_eigen.matrixL().nestedExpression().nonZeros()
                        : selinv_llt->matrixL().nestedExpression().nonZeros();
   return (double)nnz / (double)n;
+}
+
+long long sparse_llt_solver::factor_nnz() {
+  if (!ensure_selinv_factor() || n <= 0)
+    return -1;
+  return (long long)(solver_type == 0
+                         ? R_eigen.matrixL().nestedExpression().nonZeros()
+                         : selinv_llt->matrixL().nestedExpression().nonZeros());
+}
+
+// The cost of FORMING the selected inverse, as against the cost of storing it.
+// Mirrors build_selinv() below exactly: for each column j it scatters the
+// subdiagonal rows and then walks, for each such row r, the whole of column r
+// of the factor. Counting that from the pattern alone is a single pass over
+// nnz(L), so the estimate is far cheaper than the thing it estimates -- which
+// matters, because measuring by building is the expense the gate exists to
+// avoid on a matrix that turns out to be hopeless.
+long long sparse_llt_solver::selinv_build_flops() {
+  if (!ensure_selinv_factor() || n <= 0)
+    return -1;
+  const Eigen::SparseMatrix<double, 0, int> &L =
+      solver_type == 0 ? R_eigen.matrixL().nestedExpression()
+                       : selinv_llt->matrixL().nestedExpression();
+  if (L.rows() != n || L.cols() != n || !L.isCompressed())
+    return -1;
+  const int *Lp = L.outerIndexPtr();
+  const int *Li = L.innerIndexPtr();
+  long long flops = 0;
+  for (int j = 0; j < n; ++j) {
+    // Sorted lower-triangular indices put the diagonal first, so the
+    // subdiagonal rows of column j start one past it.
+    for (int q = Lp[j] + 1; q < Lp[j + 1]; ++q) {
+      const int r = Li[q];
+      if (r <= j || r >= n)
+        continue;
+      flops += (long long)(Lp[r + 1] - Lp[r]);
+    }
+  }
+  return flops;
 }
 
 bool sparse_llt_solver::build_selinv() {

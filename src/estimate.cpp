@@ -391,6 +391,21 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   bool all_converge = false;
   int steps = 0;
   int batch_steps = (iterations / n_batch);
+  // Budget synchronisation is driven from here rather than from inside each
+  // chain. trace_adapt_every is the minimum number of ITERATIONS between
+  // updates, rounded up to the next checkpoint because that is where the chains
+  // meet. Note this is a change of unit: the old countdown ran once per call to
+  // adapt_trace_probes(), which happens once per Gibbs pass, so its effective
+  // cadence silently depended on n_gibbs_samples and was faster for a
+  // non-Gaussian noise than for a Gaussian one.
+  const bool trace_adapt_sync =
+      control_opt.containsElementNamed("trace_adapt") &&
+      Rcpp::as<bool>(control_opt["trace_adapt"]);
+  const int trace_adapt_every_sync =
+      control_opt.containsElementNamed("trace_adapt_every")
+          ? std::max(1, Rcpp::as<int>(control_opt["trace_adapt_every"]))
+          : 100; // control_opt's own default, for a list built before this knob
+  int last_trace_sync = 0;
   // sqrt(n) blocks of sqrt(n) iterates is the standard batch-means split. It
   // needs enough blocks for a usable variance, so fall back to the naive
   // estimator on very short batches.
@@ -503,6 +518,31 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       }
     }
     steps += batch_steps;
+
+    // Agree one probe budget for every chain, here and nowhere else. The
+    // parallel-for above has just joined, which makes this the one point in the
+    // loop where the chains can be given a common value without a barrier of
+    // its own -- and it is the same point at which convergence is assessed, so
+    // a budget change never lands inside a window R_hat is measuring across.
+    //
+    // Chains must agree. R_hat reads the spread BETWEEN chains as evidence
+    // about the spread within them, which assumes they estimate the same thing
+    // the same way; chains probing at different budgets carry different
+    // estimator variances and quietly break that assumption. Independent
+    // adaptation also makes them do unequal work behind a statically scheduled
+    // barrier, so every iteration waits on whichever chain chose the largest
+    // budget. The maximum is taken because the budget has to be adequate for
+    // the chain that needs it most.
+    if (trace_adapt_sync && steps - last_trace_sync >= trace_adapt_every_sync) {
+      int N_sync = -1;
+      for (int c = 0; c < n_chains; c++)
+        N_sync = std::max(N_sync, ngmes[c]->suggest_trace_N());
+      if (N_sync > 0) {
+        for (int c = 0; c < n_chains; c++)
+          ngmes[c]->apply_trace_N(N_sync);
+        last_trace_sync = steps;
+      }
+    }
 
     // compute mean and variance
     means.row(curr_batch) = mat.colwise().mean();
@@ -2052,7 +2092,11 @@ Rcpp::List ngme_factor_counters(bool reset = false) {
       Rcpp::Named("probe_solves") = static_cast<double>(
           ngme_counters::probe_solves.load(std::memory_order_relaxed)),
       Rcpp::Named("gibbs_passes") = static_cast<double>(
-          ngme_counters::gibbs_passes.load(std::memory_order_relaxed)));
+          ngme_counters::gibbs_passes.load(std::memory_order_relaxed)),
+      Rcpp::Named("fisher_solves") = static_cast<double>(
+          ngme_counters::fisher_solves.load(std::memory_order_relaxed)),
+      Rcpp::Named("k_probe_solves") = static_cast<double>(
+          ngme_counters::k_probe_solves.load(std::memory_order_relaxed)));
   if (reset)
     ngme_counters::reset_all();
   return out;

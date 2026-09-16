@@ -122,13 +122,28 @@ protected:
   VectorXd grad_prev_, grad_diff_sq_;
   VectorXd probe_var_ewma_;  // smoothed raw probe variance, parameter layout
   long grad_run_n_{0};
-  int trace_adapt_countdown_{0};
-  int last_trace_N_{0};
+  // The budget this block would like next, or -1 if it has nothing to say.
+  // adapt_trace_probes() writes it; it is NOT applied here. Parallel chains
+  // must all probe at the SAME budget: R_hat compares chains against each
+  // other, and two chains estimating the same gradient at different probe
+  // counts have different estimator variances, so their spread no longer
+  // measures what the diagnostic assumes it measures. Chains that adapted
+  // independently also do unequal work behind a statically scheduled barrier.
+  // The driver collects these suggestions where the chains have just joined --
+  // the convergence checkpoint -- and hands one budget back to all of them.
+  int suggested_trace_N_{-1};
   int selinv_state_{-1}; // -1 undecided, 0 probing, 1 selected inverse
   double selinv_max_fill{4.0};
+  // Probe budget for the expected-information estimate used by the
+  // preconditioner. It was taking the trace probe budget, which is sized
+  // against gradient variance -- a different target -- so it has its own.
+  // NA on the R side means follow n_trace_iter, as before.
+  int n_fisher_probes_{-1};
   bool trace_adapt{false};
   double trace_adapt_frac{0.1};
-  int trace_adapt_every{50}, trace_adapt_min{5}, trace_adapt_max{200};
+  // The cadence of budget updates belongs to the driver, which applies one
+  // agreed budget to every chain at the convergence checkpoints.
+  int trace_adapt_min{5}, trace_adapt_max{200};
   // The operator-side probe block is resized by set_N_iter, and the trace code
   // caches a factored probe block across Gibbs passes. Changing the budget in
   // the middle of a gradient computation therefore leaves that cache sized for
@@ -242,6 +257,14 @@ public:
   void burn_in(int);
 
   int get_n_obs() const { return n_obs; }
+
+  // The probe budget this block would like next, or -1 if it has none to offer.
+  int get_suggested_trace_N() const { return suggested_trace_N_; }
+  // Adopt a budget chosen for every chain at once. Applying it is separated
+  // from suggesting it so the value can be agreed across chains first; see the
+  // note on suggested_trace_N_.
+  void apply_trace_N(int N);
+
   // The drawn W is NOT redundant, even for an all-Gaussian model under
   // Rao-Blackwellisation. The gradient takes cond_W, but the preconditioner's
   // Hessian takes the DRAW, and it must: H_K is QUADRATIC in W, so

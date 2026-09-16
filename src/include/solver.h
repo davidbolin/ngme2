@@ -147,7 +147,6 @@ private:
   Eigen::SparseMatrix<double, 0, int> M_sym_;
   bool M_sym_ready{false};
   bool selinv_llt_ready{false};
-  int selinv_viable_{-1}; // -1 undecided, 0 fill too high, 1 usable
   // Set once the caller has ruled the selected inverse out for this fit.
   // Everything the selinv path owns -- its private factorization, the
   // symmetric copy of the matrix it factorizes, and the selected inverse
@@ -610,6 +609,23 @@ public:
   // nnz(L)/n, which requires the factor and so, on a backend that does not
   // expose one, a private factorization of its own.
   double fill_ratio();
+  // Stored entries of the factor and of the selected inverse. These are the
+  // deterministic counterparts of "how long does each route take": a probe is
+  // a triangular solve, costing nnz(L), and the selected inverse is built and
+  // then read, costing its own nnz. Using sizes rather than elapsed time keeps
+  // the choice between them a function of the matrices alone, so a fit does not
+  // depend on how busy the machine was.
+  long long factor_nnz();
+  // Flop count of the Takahashi recursion, read off the factor's pattern
+  // without forming anything. Column j scatters its subdiagonal rows and then
+  // walks the column of L belonging to each of them, so the work is
+  //   sum_j sum_{r in L[:,j], r > j} nnz(L[:,r]),
+  // which is the recursion's own operation count rather than a proxy for it.
+  // nnz(S_sel) is not that count and cannot stand in for it: the selected
+  // inverse shares L's pattern exactly, so its size says what the result costs
+  // to store and nothing about what it costs to form. Sizing the build by it
+  // makes the exact route look free on every matrix.
+  long long selinv_build_flops();
   // A lower bound on what fill_ratio() would return, read straight off the
   // matrix. The pattern of the Cholesky factor always contains the lower
   // triangle of the matrix it factorizes, so nnz(L) >= nnz(tril(M)). When even

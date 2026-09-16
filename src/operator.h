@@ -60,9 +60,18 @@ struct UpdateOptions {
   bool prefer_analytic_d2K{true};
   bool prefer_analytic_d2Z{false};
   int n_trace_iter{8};
-  // Fill threshold above which the exact selected inverse is abandoned for
-  // Hutchinson probes; same meaning and same default as BlockModel's.
+  // Fill above which the exact selected inverse is not considered at all. Only
+  // a rail here, not the decision: control_opt's selinv_max_fill_k feeds this
+  // and is Inf by default, so the count below normally decides. Distinct from
+  // BlockModel's selinv_max_fill, which IS the decision for the block
+  // precision.
   double selinv_max_fill{4.0};
+  // How much dearer one exact selected inverse may be than the probes it
+  // replaces and still be preferred; the exact route carries no estimation
+  // variance, so it is worth somewhat more than its bare cost.
+  double selinv_cost_ratio{2.0};
+  // Echoes the latent's debug flag so the route chosen can be printed.
+  bool debug{false};
   int solver_type{0};
   // 0 = LU of K, 1 = Cholesky of K^T K (non-symmetric operators only)
   int nonsym_solver{0};

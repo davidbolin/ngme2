@@ -28,6 +28,29 @@ extern std::atomic<long long> K_analyzes;   // symbolic phase for a latent opera
 // directly comparable between runs however the machine behaved.
 extern std::atomic<long long> probe_solves; // probe columns solved against QQ
 extern std::atomic<long long> gibbs_passes; // Gibbs sweeps in the gradient
+extern std::atomic<long long> fisher_solves; // solves for the information estimate
+extern std::atomic<long long> k_probe_solves;  // probe columns solved against K
+
+// Which solver is drawing probes right now. The two are the same unit of work
+// at very different cost, so they are counted apart; a thread-local marker set
+// by the caller avoids giving the solver a member and shifting the layout of
+// everything that holds one.
+enum class probe_role { qq = 0, op = 1 };
+extern thread_local probe_role current_probe_role;
+
+// Marks a scope as drawing against the operator rather than the block
+// precision. Saves and restores the previous value rather than resetting to a
+// fixed one, so the guards nest: an inner scope ending must not hand the rest
+// of an enclosing operator region back to the qq counter.
+struct probe_role_scope {
+  probe_role prev;
+  explicit probe_role_scope(probe_role r) : prev(current_probe_role) {
+    current_probe_role = r;
+  }
+  ~probe_role_scope() { current_probe_role = prev; }
+  probe_role_scope(const probe_role_scope &) = delete;
+  probe_role_scope &operator=(const probe_role_scope &) = delete;
+};
 
 inline void add(std::atomic<long long> &c, long long n) {
   c.fetch_add(n, std::memory_order_relaxed);

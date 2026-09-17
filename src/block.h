@@ -8,6 +8,7 @@ BlockModel - for ngme each replicate
 #include "include/factor_counters.h"
 #include "include/nig_std.h"
 #include "include/solver.h"
+#include "include/ata_cache.h"
 #include "include/timer.h"
 #include "latent.h"
 #include "model.h"
@@ -244,6 +245,13 @@ protected:
   // chol_QQ still match the current state; every mutator that can invalidate
   // them calls invalidate_QQ() / invalidate_AZ().
   bool QQ_valid{false};
+  // Q = K' diag(1/SV) K rebuilt every Gibbs draw. K's pattern is fixed for a
+  // fit while 1/SV is not, so the symbolic phase of the triple product is
+  // repeated for nothing; the cache below keeps the destination slots and
+  // refills values. Falls back to the direct product when the scatter list
+  // would exceed its memory budget. See include/ata_cache.h.
+  AtDA_cache qq_ata_;
+  std::size_t qq_ata_budget_{256u * 1024u * 1024u};
   // QQ = Q + QQ_measure is a sparse-sparse ADD, and Eigen recomputes the union
   // pattern and reallocates on every call even though both operands' patterns
   // are fixed within a fit. The nnz each operand had when QQ's pattern was last

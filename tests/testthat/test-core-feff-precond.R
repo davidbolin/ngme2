@@ -112,9 +112,20 @@ test_that("precond_meas_sigma = 'auto' is the complete-data block for Gaussian n
   fit_auto <- fit_ar1(fx)
   fit_complete <- fit_ar1(fx, precond_meas_sigma = "complete")
   fit_fisher <- fit_ar1(fx, precond_meas_sigma = "fisher")
-  # Same seed, same blocks: identical optimisation.
-  expect_identical(attr(fit_auto, "chain_params"), attr(fit_complete, "chain_params"))
-  expect_identical(last_info(fit_auto)$info, last_info(fit_complete)$info)
-  # The Fisher block is a different preconditioner, so the path differs.
-  expect_false(identical(attr(fit_auto, "chain_params"), attr(fit_fisher, "chain_params")))
+  # Same seed, same blocks: the same optimisation. Compared to a tolerance
+  # rather than bitwise -- Accelerate's sparse factorization is not bitwise
+  # reproducible even between two runs of identical code, so these agree to
+  # round-off but not always to the last bit. The fill-reducing ordering does
+  # not cause that, it only perturbs it enough to show.
+  tol <- 1e-8
+  expect_equal(attr(fit_auto, "chain_params"),
+               attr(fit_complete, "chain_params"), tolerance = tol)
+  expect_equal(last_info(fit_auto)$info, last_info(fit_complete)$info,
+               tolerance = tol)
+  # The Fisher block is a different preconditioner, so the path differs -- and
+  # differs by far more than that round-off. Testing it with identical() would
+  # now pass vacuously, since round-off alone is enough to make it false.
+  reldiff <- function(a, b) max(abs(a - b) / pmax(abs(b), 1e-8))
+  expect_gt(reldiff(attr(fit_auto, "chain_params"),
+                    attr(fit_fisher, "chain_params")), tol)
 })

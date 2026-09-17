@@ -12,6 +12,12 @@
 #include "MatrixAlgebra.h"
 #include <unsupported/Eigen/KroneckerProduct>
 
+// Below this the streamline-diffusion stabilization term is not formed at all;
+// within kStabSafe of it the term exists but its derivative, which carries a
+// 1/||gamma||^2 factor, is not usable and the caller falls back to differencing.
+static constexpr double kStabCut = 1e-8;
+static constexpr double kStabSafe = 1e-6;
+
 // tensor product for the C G class
 Tensor_prod::Tensor_prod(const Rcpp::List &operator_list)
     : Operator(operator_list),
@@ -451,7 +457,8 @@ void Spacetime::build_KZ(const VectorXd &theta_K) {
       if (alpha == 4)
         Ls = Ls * Cs_diag.cwiseInverse().asDiagonal() * Ls.transpose();
 
-      if (stabilization && !(gamma_x.norm() < 1e-8 && gamma_y.norm() < 1e-8)) {
+      if (stabilization &&
+          !(gamma_x.norm() < kStabCut && gamma_y.norm() < kStabCut)) {
         VectorXd gamma_xx = gamma_x.array().square();
         VectorXd gamma_yy = gamma_y.array().square();
         VectorXd gamma_xy = gamma_x.array() * gamma_y.array();
@@ -615,8 +622,7 @@ void Spacetime::update_dK(const VectorXd &theta_K) {}
 // differencing instead calls build_KZ() once per parameter for dK and four
 // times per parameter PAIR for d2K, each one assembling the full operator.
 //
-// Not covered, and handed back to numeric differencing: alpha == 4 (Ls becomes
-// quadratic in itself) and stabilization (nonlinear in gamma, with a norm).
+// Not covered, and handed back to numeric differencing: alpha == 4
 // ---------------------------------------------------------------------------
 
 namespace {
@@ -659,6 +665,136 @@ void Spacetime::assemble_shaped(SparseMatrix<double> &out, double base_coef,
   out.makeCompressed();
 }
 
+// d/dtheta of  Cs_diag * Si(gamma) / ||gamma||  for one spatial block.
+//
+// Si = D(gx^2) Hxx D(gx^2) + D(gy^2) Hyy D(gy^2) + D(gx gy)(Hxy+Hyx) D(gx gy)
+// is quartic in gamma and ||gamma|| = sqrt(sum gx^2 + gy^2) is a scalar, so
+// the whole term is smooth away from gamma = 0 and the derivative is a
+// quotient rule:  (dSi/dtheta)/||g||  -  Si * (d||g||/dtheta) / ||g||^2.
+// With gx linear in theta, d(gx^2) = 2 gx.bx, d(gx gy) = bx.gy + gx.by, and
+// d||g|| = (sum gx.bx + gy.by) / ||g||.
+// dSi/dtheta for one spatial block.
+//
+// Si = D(u) Hxx D(u) + D(v) Hyy D(v) + D(w) (Hxy+Hyx) D(w)  with
+// u = gx^2, v = gy^2, w = gx gy, so each term differentiates by the product
+// rule. gx and gy are LINEAR in theta, hence du = 2 gx.bx, dw = bx.gy + gx.by.
+void Spacetime::stab_dSi(int i, const VectorXd &bx, const VectorXd &by,
+                         SparseMatrix<double> &out) const {
+  const VectorXd &gx = stab_gx_[i];
+  const VectorXd &gy = stab_gy_[i];
+  const VectorXd u = gx.array().square();
+  const VectorXd v = gy.array().square();
+  const VectorXd w = gx.array() * gy.array();
+  const VectorXd du = 2.0 * (gx.array() * bx.array()).matrix();
+  const VectorXd dv = 2.0 * (gy.array() * by.array()).matrix();
+  const VectorXd dw =
+      (bx.array() * gy.array() + gx.array() * by.array()).matrix();
+  const SparseMatrix<double> Hc = Hxy + Hyx;
+  out = du.asDiagonal() * Hxx * u.asDiagonal() +
+        u.asDiagonal() * Hxx * du.asDiagonal() +
+        dv.asDiagonal() * Hyy * v.asDiagonal() +
+        v.asDiagonal() * Hyy * dv.asDiagonal() +
+        dw.asDiagonal() * Hc * w.asDiagonal() +
+        w.asDiagonal() * Hc * dw.asDiagonal();
+}
+
+// d/dtheta of  Cs_diag * Si(gamma) / ||gamma||  for one spatial block.
+// ||gamma|| is a scalar, so this is the quotient rule:
+//   dSi/||g||  -  Si * (d||g||/dtheta) / ||g||^2,  d||g|| = (gx.bx + gy.by)/||g||.
+void Spacetime::dStab_block(int i, const VectorXd &bx, const VectorXd &by,
+                            SparseMatrix<double> &out) const {
+  SparseMatrix<double> dSi;
+  stab_dSi(i, bx, by, dSi);
+  const double gn = stab_norm_[i];
+  const double dgn = (stab_gx_[i].dot(bx) + stab_gy_[i].dot(by)) / gn;
+  out = Cs_diag.asDiagonal() *
+        (SparseMatrix<double>)(dSi / gn - (dgn / (gn * gn)) * stab_Si_[i]);
+}
+
+// d2/dtheta_m dtheta_n of the same term. Differentiating the quotient rule once
+// more gives five pieces; the second derivatives of u, v and w survive because
+// they are quadratic in gamma even though gamma itself is linear in theta.
+void Spacetime::d2Stab_block(int i, const VectorXd &bxm, const VectorXd &bym,
+                             const VectorXd &bxn, const VectorXd &byn,
+                             SparseMatrix<double> &out) const {
+  const VectorXd &gx = stab_gx_[i];
+  const VectorXd &gy = stab_gy_[i];
+  const SparseMatrix<double> &Si = stab_Si_[i];
+  const double gn = stab_norm_[i];
+
+  const VectorXd u = gx.array().square();
+  const VectorXd v = gy.array().square();
+  const VectorXd w = gx.array() * gy.array();
+  const VectorXd um = 2.0 * (gx.array() * bxm.array()).matrix();
+  const VectorXd un = 2.0 * (gx.array() * bxn.array()).matrix();
+  const VectorXd vm = 2.0 * (gy.array() * bym.array()).matrix();
+  const VectorXd vn = 2.0 * (gy.array() * byn.array()).matrix();
+  const VectorXd wm =
+      (bxm.array() * gy.array() + gx.array() * bym.array()).matrix();
+  const VectorXd wn =
+      (bxn.array() * gy.array() + gx.array() * byn.array()).matrix();
+  const VectorXd umn = 2.0 * (bxm.array() * bxn.array()).matrix();
+  const VectorXd vmn = 2.0 * (bym.array() * byn.array()).matrix();
+  const VectorXd wmn =
+      (bxm.array() * byn.array() + bxn.array() * bym.array()).matrix();
+
+  const SparseMatrix<double> Hc = Hxy + Hyx;
+  SparseMatrix<double> d2Si =
+      umn.asDiagonal() * Hxx * u.asDiagonal() +
+      u.asDiagonal() * Hxx * umn.asDiagonal() +
+      um.asDiagonal() * Hxx * un.asDiagonal() +
+      un.asDiagonal() * Hxx * um.asDiagonal() +
+      vmn.asDiagonal() * Hyy * v.asDiagonal() +
+      v.asDiagonal() * Hyy * vmn.asDiagonal() +
+      vm.asDiagonal() * Hyy * vn.asDiagonal() +
+      vn.asDiagonal() * Hyy * vm.asDiagonal() +
+      wmn.asDiagonal() * Hc * w.asDiagonal() +
+      w.asDiagonal() * Hc * wmn.asDiagonal() +
+      wm.asDiagonal() * Hc * wn.asDiagonal() +
+      wn.asDiagonal() * Hc * wm.asDiagonal();
+
+  SparseMatrix<double> dSim, dSin;
+  stab_dSi(i, bxm, bym, dSim);
+  stab_dSi(i, bxn, byn, dSin);
+
+  const double nm = (gx.dot(bxm) + gy.dot(bym)) / gn;
+  const double nn = (gx.dot(bxn) + gy.dot(byn)) / gn;
+  const double nmn = ((bxm.dot(bxn) + bym.dot(byn)) - nm * nn) / gn;
+
+  const double g2 = gn * gn;
+  SparseMatrix<double> T = dSim * (-nn / g2);
+  T += dSin * (-nm / g2);
+  T += d2Si / gn;
+  T += Si * (2.0 * nm * nn / (g2 * gn) - nmn / g2);
+  out = Cs_diag.asDiagonal() * T;
+}
+
+// Which gamma components parameter m drives in block i.
+bool Spacetime::gamma_basis(int m, int i, VectorXd &bx, VectorXd &by) const {
+  bx = VectorXd::Zero(ns_);
+  by = VectorXd::Zero(ns_);
+  if (fix_gamma || m < 2)
+    return false;
+  const int g = m - 2;
+  if (shared_theta_gamma) {
+    if (g >= n_theta_gamma_x)
+      return false;
+    // One parameter drives both components, so both terms contribute.
+    bx = B_gamma_x_list[i].col(g);
+    by = B_gamma_y_list[i].col(g);
+    return true;
+  }
+  if (g < n_theta_gamma_x) {
+    bx = B_gamma_x_list[i].col(g);
+    return true;
+  }
+  const int gy = g - n_theta_gamma_x;
+  if (gy >= n_theta_gamma_y)
+    return false;
+  by = B_gamma_y_list[i].col(gy);
+  return true;
+}
+
 // dLs/dtheta_m for the interior block at time node i, complete (the kappa
 // chain rule included). False means identically zero.
 bool Spacetime::dLs_block(int m, int i, double k2,
@@ -667,40 +803,39 @@ bool Spacetime::dLs_block(int m, int i, double k2,
     out = (2.0 * k2) * Cs;
     return true;
   }
-  if (fix_gamma || m < 2)
+  // dgx / dtheta_m and dgy / dtheta_m. The stabilization term couples the two,
+  // so both are needed even when only one drives the advection part.
+  VectorXd bx, by;
+  if (!gamma_basis(m, i, bx, by))
     return false;
-  const int g = m - 2;
-  if (shared_theta_gamma) {
-    if (g >= n_theta_gamma_x)
-      return false;
-    // One parameter drives both components, so both terms contribute.
-    out = SparseMatrix<double>(
-              (SparseMatrix<double>)(B_gamma_x_list[i].col(g).asDiagonal() * Bx)) +
-          SparseMatrix<double>(
-              (SparseMatrix<double>)(B_gamma_y_list[i].col(g).asDiagonal() * By));
-    return true;
+  out = SparseMatrix<double>((SparseMatrix<double>)(bx.asDiagonal() * Bx)) +
+        SparseMatrix<double>((SparseMatrix<double>)(by.asDiagonal() * By));
+  if (stab_ready(i)) {
+    SparseMatrix<double> ds;
+    dStab_block(i, bx, by, ds);
+    out = out + ds;
   }
-  if (g < n_theta_gamma_x) {
-    out = B_gamma_x_list[i].col(g).asDiagonal() * Bx;
-    return true;
-  }
-  const int gy = g - n_theta_gamma_x;
-  if (gy >= n_theta_gamma_y)
-    return false;
-  out = B_gamma_y_list[i].col(gy).asDiagonal() * By;
   return true;
 }
 
 bool Spacetime::d2Ls_block(int m, int n, int i, double k2,
                            SparseMatrix<double> &out) const {
-  (void)i;
-  // Ls is linear in every gamma parameter and free of theta_0, so the only
-  // second derivative that survives is d2(kappa^2)/d theta_1^2 = 4 kappa^2.
+  // theta_1 enters Ls only through kappa^2.
   if (m == 1 && n == 1) {
     out = (4.0 * k2) * Cs;
     return true;
   }
-  return false;
+  // The advection term is linear in every gamma parameter and theta_0 does not
+  // enter Ls, so with no stabilization nothing else survives. The stabilization
+  // term is quartic in gamma, so every gamma pair does, and it involves no
+  // kappa, which is why the mixed kappa/gamma pairs still vanish.
+  if (!stab_ready(i) || m < 2 || n < 2)
+    return false;
+  VectorXd bxm, bym, bxn, byn;
+  if (!gamma_basis(m, i, bxm, bym) || !gamma_basis(n, i, bxn, byn))
+    return false;
+  d2Stab_block(i, bxm, bym, bxn, byn, out);
+  return true;
 }
 
 // Gather what both derivative routines need from theta. Returns false for a
@@ -724,11 +859,12 @@ bool Spacetime::analytic_state(const VectorXd &theta_K, double &c_out,
                                double &mm, double &nn, double &u) const {
   if (spacetime_analytic_disabled())
     return false;
-  if (alpha != 2 || stabilization || nt <= 1 || ns_ <= 0)
+  if (alpha != 2 || nt <= 1 || ns_ <= 0)
     return false;
   if ((int)theta_K.size() != n_theta_K || n_theta_K < 2)
     return false;
 
+  stab_active_ = false;
   const double c = std::exp(theta_K[0]);
   const double kappa = std::exp(theta_K[1]);
   const double k2 = kappa * kappa;
@@ -739,6 +875,13 @@ bool Spacetime::analytic_state(const VectorXd &theta_K, double &c_out,
 
   // The interior spatial blocks, formed exactly as build_KZ() forms them.
   Ls.assign(nblk, SparseMatrix<double>());
+  bool stab_near_cut = false;
+  if (stabilization && !fix_gamma) {
+    stab_gx_.assign(nblk, VectorXd());
+    stab_gy_.assign(nblk, VectorXd());
+    stab_Si_.assign(nblk, SparseMatrix<double>());
+    stab_norm_.assign(nblk, 0.0);
+  }
   for (int b = 0; b < nblk; ++b) {
     if (fix_gamma) {
       Ls[b] = k2 * Cs + lambda * Gs + Bs;
@@ -752,8 +895,38 @@ bool Spacetime::analytic_state(const VectorXd &theta_K, double &c_out,
       const VectorXd gy = B_gamma_y_list[b] * tgy;
       Ls[b] =
           k2 * Cs + lambda * Gs + (gx.asDiagonal() * Bx + gy.asDiagonal() * By);
+      if (stabilization) {
+        // Formed exactly as build_KZ() forms it, including the cut-off below
+        // which build_KZ() drops the term entirely.
+        if (gx.norm() < kStabCut && gy.norm() < kStabCut) {
+          // build_KZ() drops the term for this block, so the unstabilized
+          // derivative is the right one here; nothing to record.
+        } else {
+          const VectorXd gxx = gx.array().square();
+          const VectorXd gyy = gy.array().square();
+          const VectorXd gxy = gx.array() * gy.array();
+          SparseMatrix<double> Si =
+              gxx.asDiagonal() * Hxx * gxx.asDiagonal() +
+              gyy.asDiagonal() * Hyy * gyy.asDiagonal() +
+              gxy.asDiagonal() * (Hxy + Hyx) * gxy.asDiagonal();
+          const double gnorm = std::sqrt(gxx.sum() + gyy.sum());
+          Ls[b] = Ls[b] + Cs_diag.asDiagonal() * Si / gnorm;
+          stab_active_ = true;
+          if (gnorm < kStabSafe)
+            stab_near_cut = true;
+          stab_gx_[b] = gx; stab_gy_[b] = gy; stab_Si_[b] = Si;
+          stab_norm_[b] = gnorm;
+        }
+      }
     }
   }
+  // Within a margin of build_KZ()'s cut-off the analytic derivative is not the
+  // one the build would take, and its 1/||gamma||^2 factor is enormous: hand
+  // the whole state to differencing instead.
+  if (stabilization && stab_near_cut)
+    return false;
+  if (stabilization && fix_gamma)
+    return false;  // Bs path: the stabilization term is not formed there
 
   has_stat = stationary_init;
   if (has_stat) {
@@ -1237,11 +1410,21 @@ bool Spacetime::compute_traces_structured(const VectorXd &theta,
     }
     hk_lu_ready = true;
 
-    // When the Hessian is also wanted, one dense inverse per block replaces
-    // every dense solve on this path. The n_theta_K first-order solves here
-    // and the n_theta_K + n_theta_K*(n_theta_K+1)/2 solves the Hessian section
-    // would otherwise do. At n_theta_K = 4 that is 18 solves down to 1.
-    if (opts.compute_HK_trace) {
+    // One dense inverse per block replaces every dense solve on this path: the
+    // n_theta_K first-order solves here and, when the Hessian is wanted, the
+    // n_theta_K + n_theta_K*(n_theta_K+1)/2 the Hessian section would do. At
+    // n_theta_K = 4 that is 18 solves down to 1.
+    //
+    // The inverse is worth building whenever it replaces more than one dense
+    // solve, NOT only when the Hessian is wanted. Both cost ns right-hand
+    // sides, so with two or more free parameters the inverse is already
+    // cheaper -- and without this the no-Hessian path was the SLOWER of the
+    // two, which is the wrong way round.
+    int n_free = 0;
+    for (int j = 0; j < n_theta_K; ++j)
+      if (opts.fix_mask_thetaK.empty() || !opts.fix_mask_thetaK[j])
+        ++n_free;
+    if (opts.compute_HK_trace || n_free > 1) {
       Zinv.resize(n_distinct);
       MatrixXd I = MatrixXd::Identity(n, n);
       for (int b = 0; b < n_distinct; ++b)

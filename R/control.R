@@ -93,6 +93,15 @@
 #'   and with R's bundled reference BLAS those kernels run one to two orders of
 #'   magnitude below a tuned one. Thus, link R against OpenBLAS or MKL before fitting
 #'   large models.
+#' @param solver_order fill-reducing ordering for the \code{"accelerate"}
+#'   backend. The ordering fixes the fill of the Cholesky factor and so the
+#'   cost of every factorization, which is the largest single item in a fit
+#'   with a high-dimensional latent field.
+#'   \code{"auto"} (default) analyzes the pattern under each candidate ordering
+#'   and keeps the one giving the smallest factor.
+#'   Its cost is a fixed amount of extra symbolic work at setup, so pass
+#'   \code{"default"} (leave Apple's choice, which is AMD) for a short fit.
+#'   \code{"amd"} and \code{"metis"} (nested dissection) force one ordering.
 #' @param solver_type factorization type: "llt" or "ldlt"
 #' @param nonsym_solver how the operator matrix \code{K} of a non-symmetric
 #'   model is factorized when estimating \code{tr(K^-1 dK)}.
@@ -390,6 +399,7 @@ control_opt <- function(
     solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
     solver_type = "llt",
     nonsym_solver = "normal_equations",
+    solver_order = c("auto", "default", "amd", "metis"),
     # opt print
     verbose = FALSE,
     store_traj = TRUE,
@@ -499,6 +509,9 @@ control_opt <- function(
   solver_backend <- match.arg(solver_backend, solver_backend_list)
   solver_factor <- match.arg(solver_type, solver_factor_list)
   nonsym_solver <- match.arg(nonsym_solver, nonsym_solver_list)
+  solver_order <- match.arg(solver_order)
+  # -1 leaves Accelerate's own default in place; the rest are SparseOrder_t.
+  solver_order_idx <- c(default = -1L, auto = -2L, amd = 2L, metis = 3L)[[solver_order]]
   stepsize_decay_method <- match.arg(stepsize_decay_method, stepsize_decay_list)
   stepsize_schedule_method <- match.arg(stepsize_schedule_method, stepsize_schedule_list)
   solver_backend_idx <- match(solver_backend, solver_backend_list) - 1L
@@ -698,6 +711,7 @@ control_opt <- function(
     solver_backend = solver_backend_idx,
     solver_factor = solver_factor_idx,
     nonsym_solver = nonsym_solver_idx,
+    solver_order = solver_order_idx,
 
     # stepsize decay
     stepsize_decay = stepsize_decay_method,
@@ -904,6 +918,7 @@ update_control_ngme <- function(control_ngme, control_opt) {
   control_ngme$solver_backend <- control_opt$solver_backend
   control_ngme$solver_factor <- control_opt$solver_factor
   control_ngme$nonsym_solver <- control_opt$nonsym_solver
+  control_ngme$solver_order <- control_opt$solver_order
   control_ngme$robust <- control_opt$robust
   control_ngme$nig_param_std <- control_opt$nig_param_std
   control_ngme$precond_meas_sigma <- control_opt$precond_meas_sigma

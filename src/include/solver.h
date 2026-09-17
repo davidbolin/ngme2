@@ -10,6 +10,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <cholmod.h>
+#include <atomic>
 #include <cstdio>
 #include <iostream>
 #include <memory>
@@ -28,6 +29,23 @@
 #endif
 
 #ifdef __APPLE__
+// Fill-reducing ordering for the Accelerate backend, set once per fit from
+// control_opt(solver_order=): -1 leaves the library default in place, -2 picks
+// by fill, and a non-negative value is a SparseOrder_t. See analyze().
+//
+// Atomic only because it is written on the R thread at construction and read
+// inside the OpenMP regions over chains and replicates; it never changes during
+// a fit, so the relaxed ordering is all that is needed.
+inline std::atomic<int> &ngme_accel_order_ref() {
+  static std::atomic<int> v{-1};
+  return v;
+}
+inline int ngme_accel_order() {
+  return ngme_accel_order_ref().load(std::memory_order_relaxed);
+}
+inline void ngme_set_accel_order(int v) {
+  ngme_accel_order_ref().store(v, std::memory_order_relaxed);
+}
 // ---------------------------------------------------------------------------
 // Apple's Accelerate sparse solvers are NOT fork-safe.
 //
@@ -37,9 +55,7 @@
 // exec() first. R's `parallel::mclapply()` forks and does not exec, so ANY use
 // of an Accelerate factorization inside an mclapply worker aborts the child --
 // and, because R's fork workers share the session's error handling, takes the
-// whole R session down with it. Measured on this build: forked workers survive
-// 3/3 with `solver_backend = "cholmod"` and 3/3 with `"eigen"`, and abort with
-// `"accelerate"`, for Gaussian and non-Gaussian models alike.
+// whole R session down with it.
 //
 // This is not something the caller can be expected to know, and the failure is
 // a crash rather than an error, so the library declines to walk into it: a
@@ -96,6 +112,8 @@ private:
   Eigen::SparseLU<Eigen::SparseMatrix<double, 0, int>, Eigen::COLAMDOrdering<int>>
       R_lu;
   bool use_lu{false};
+  // Ordering picked by fill under solver_order = "auto"; -1 until chosen.
+  int accel_order_chosen_{-1};
   // Whether the last R_lu.factorize() succeeded. Eigen's SparseLU returns from
   // factorize() *before* it sets up m_Lstore when the matrix is singular, and
   // its solve path only guards that with an eigen_assert, which is compiled
@@ -294,14 +312,51 @@ public:
       }
       break;
 #ifdef __APPLE__
-    case 4:
-      if (isSymmetric) {
-        R_accelerate.analyzePattern(M);
-      } else {
-        R_accelerate.analyzePattern(M.transpose() * M);
+    case 4: {
+      // Accelerate's fill-reducing ordering, which the package never set: every
+      // factorization used the library default (AMD). solver_order selects one
+      // instead -- 2 = AMD, 3 = Metis nested dissection. Must be set BEFORE
+      // analyzePattern.
+      //
+      // -2 chooses by FILL: the symbolic phase reports the size the numeric
+      // factor will occupy, so the candidates are compared on that rather than
+      // by timing a factorization.
+      const Eigen::SparseMatrix<double, 0, int> Ana =
+          isSymmetric ? M : (Eigen::SparseMatrix<double, 0, int>)(M.transpose() * M);
+      if (ngme_accel_order() == -2 && accel_order_chosen_ < 0) {
+        // Deliberately NOT including 1 (SparseOrderUser with a null
+        // permutation, i.e. no permutation at all). It gives the SMALLEST
+        // FACTOR of any candidate on a banded operator and is markedly SLOWER to
+        // factorize regardless, because the factorization is supernodal and
+        // the natural ordering of a band leaves supernodes too thin to reach
+        // the blocked kernels. Fill ranks fill-reducing orderings against each
+        // other reliably; it does not rank them against not ordering at all.
+        static const int cand[] = {0, 2, 3};
+        std::size_t best = 0;
+        for (int c : cand) {
+          R_accelerate.setOrder((SparseOrder_t)c);
+          R_accelerate.analyzePattern(Ana);
+          if (R_accelerate.info() != Eigen::Success)
+            continue;
+          const std::size_t fs = R_accelerate.factorSize();
+          if (fs > 0 && (best == 0 || fs < best)) {
+            best = fs;
+            accel_order_chosen_ = c;
+          }
+        }
+        if (accel_order_chosen_ < 0)
+          accel_order_chosen_ = 0;
       }
+      const int ord =
+          (ngme_accel_order() == -2) ? accel_order_chosen_ : ngme_accel_order();
+      if (ord >= 0)
+        R_accelerate.setOrder((SparseOrder_t)ord);
+      R_accelerate.analyzePattern(Ana);
       break;
+    }
     case 5:
+      if (ngme_accel_order() >= 0)
+        R_accelerate_ldlt.setOrder((SparseOrder_t)ngme_accel_order());
       if (isSymmetric) {
         R_accelerate_ldlt.analyzePattern(M);
       } else {

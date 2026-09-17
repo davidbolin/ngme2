@@ -475,6 +475,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
           // Compute one SGD step and decide whether to compute preconditioner this
           // iter. We compute it every iter if compute_precond_each_iter, else
           // let the optimizer refresh at needed cadence
+          ngme_timing::Scope _os(ngme_timing::opt_step_us());
           VectorXd param = opt_vec[i].sgd(0.1, // eps
                                           1,   // one step per loop
                                           max_relative_step, max_absolute_step,
@@ -2111,7 +2112,14 @@ Rcpp::NumericVector factorization_timing(bool reset = false) {
       Rcpp::_["sw_ensureQQ"] = ngme_timing::sw_ensureQQ_us().load() * 1e-6,
       Rcpp::_["sw_M"] = ngme_timing::sw_M_us().load() * 1e-6,
       Rcpp::_["sw_G"] = ngme_timing::sw_G_us().load() * 1e-6,
-      Rcpp::_["sw_H"] = ngme_timing::sw_H_us().load() * 1e-6);
+      Rcpp::_["sw_H"] = ngme_timing::sw_H_us().load() * 1e-6,
+      Rcpp::_["grad_V"] = ngme_timing::grad_V_us().load() * 1e-6,
+      Rcpp::_["grad_score"] = ngme_timing::grad_score_us().load() * 1e-6,
+      Rcpp::_["grad_assemble"] = ngme_timing::grad_assemble_us().load() * 1e-6,
+      Rcpp::_["grad_prec_lat"] = ngme_timing::grad_prec_lat_us().load() * 1e-6,
+      Rcpp::_["grad_prec_ZGN"] = ngme_timing::grad_prec_ZGN_us().load() * 1e-6,
+      Rcpp::_["grad_prec_merr"] = ngme_timing::grad_prec_merr_us().load() * 1e-6,
+      Rcpp::_["opt_step"] = ngme_timing::opt_step_us().load() * 1e-6);
   if (reset) {
     ngme_timing::qq_numeric_us().store(0);
     ngme_timing::qq_symbolic_us().store(0);
@@ -2142,6 +2150,13 @@ Rcpp::NumericVector factorization_timing(bool reset = false) {
     ngme_timing::sw_M_us().store(0);
     ngme_timing::sw_G_us().store(0);
     ngme_timing::sw_H_us().store(0);
+    ngme_timing::grad_V_us().store(0);
+    ngme_timing::grad_score_us().store(0);
+    ngme_timing::grad_assemble_us().store(0);
+    ngme_timing::grad_prec_lat_us().store(0);
+    ngme_timing::grad_prec_ZGN_us().store(0);
+    ngme_timing::grad_prec_merr_us().store(0);
+    ngme_timing::opt_step_us().store(0);
   }
   return out;
 }

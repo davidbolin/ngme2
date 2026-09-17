@@ -63,7 +63,7 @@ struct UpdateOptions {
   // Fill above which the exact selected inverse is not considered at all. Only
   // a rail here, not the decision: control_opt's selinv_max_fill_k feeds this
   // and is Inf by default, so the count below normally decides. Distinct from
-  // BlockModel's selinv_max_fill, which IS the decision for the block
+  // BlockModel's selinv_max_fill, which is the decision for the block
   // precision.
   double selinv_max_fill{4.0};
   // How much dearer one exact selected inverse may be than the probes it
@@ -413,6 +413,41 @@ private:
   // i. theta_0 (cc) does not enter Ls, so m, n >= 1. False means identically
   // zero, which the caller can then skip rather than assemble.
   bool dLs_block(int m, int i, double k2, SparseMatrix<double> &out) const;
+  // Streamline-diffusion stabilization adds  Cs_diag * Si(gamma) / ||gamma||
+  // to every spatial block, with Si quartic in gamma. analytic_state() records
+  // the per-block gamma it built those blocks from so dLs_block() can
+  // differentiate the term; stab_active_ is false when the term is absent or
+  // when ||gamma|| is close enough to build_KZ()'s 1e-8 cut-off that the
+  // derivative is not the one the build would take.
+  mutable std::vector<VectorXd> stab_gx_, stab_gy_;
+  // Si is the same for every parameter within a block, and analytic_state()
+  // already forms it to build Ls, so it is kept rather than recomputed per
+  // parameter -- that recomputation was most of the derivative's cost.
+  mutable std::vector<SparseMatrix<double>> stab_Si_;
+  // ||gamma|| per block: it enters the derivative as 1/||g|| and 1/||g||^2,
+  // and gamma may vary over time, so this cannot be a single scalar.
+  mutable std::vector<double> stab_norm_;
+  mutable bool stab_active_{false};
+  // Whether block i has a usable cached stabilization state.
+  bool stab_ready(int i) const {
+    return stab_active_ && i < (int)stab_gx_.size() &&
+           stab_gx_[i].size() == ns_;
+  }
+  // Which gamma components parameter m drives in block i, as the derivative of
+  // each component with respect to it. False when m is not a gamma parameter.
+  bool gamma_basis(int m, int i, VectorXd &bx, VectorXd &by) const;
+  // dSi/dtheta for block i. Shared by the first and second derivatives.
+  void stab_dSi(int i, const VectorXd &bx, const VectorXd &by,
+                SparseMatrix<double> &out) const;
+  // d/dtheta of the stabilization term for spatial block i, given the
+  // derivatives of the gamma components with respect to that parameter.
+  void dStab_block(int i, const VectorXd &bx, const VectorXd &by,
+                   SparseMatrix<double> &out) const;
+  // d2/dtheta_m dtheta_n of the stabilization term for spatial block i. Si is
+  // quartic in gamma, so unlike the advection term this does not vanish.
+  void d2Stab_block(int i, const VectorXd &bxm, const VectorXd &bym,
+                    const VectorXd &bxn, const VectorXd &byn,
+                    SparseMatrix<double> &out) const;
   bool d2Ls_block(int m, int n, int i, double k2,
                   SparseMatrix<double> &out) const;
   // Everything both derivative routines need from theta, gathered once. False

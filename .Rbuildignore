@@ -22,3 +22,4 @@
 
 # Placeholders that only exist to keep empty fixture directories in git.
 \.gitkeep$
+^benchmarks$

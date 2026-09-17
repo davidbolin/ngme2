@@ -346,6 +346,13 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     Rcpp::List cn = block_model["control_ngme"];
     if (cn.containsElementNamed("debug"))
       debug = Rcpp::as<bool>(cn["debug"]);
+#ifdef __APPLE__
+    // Fill-reducing ordering for the Accelerate backend; see solver.h. Process-
+    // global because it only has to reach the solvers this fit constructs, and
+    // it does not change during a fit.
+    if (cn.containsElementNamed("solver_order"))
+      ngme_set_accel_order(Rcpp::as<int>(cn["solver_order"]));
+#endif
     if (cn.containsElementNamed("selinv_max_fill"))
       selinv_max_fill = Rcpp::as<double>(cn["selinv_max_fill"]);
     if (cn.containsElementNamed("n_fisher_probes")) {
@@ -681,7 +688,7 @@ void BlockModel::sampleW_VY(bool burn_in) {
   VectorXd inv_SV = VectorXd::Ones(V_sizes).cwiseQuotient(getSV());
 
   // M = K' * inv(SV) * mean + Z'^ A'^ inv(Sigma) * (Y - X * beta - (1 - V) mu)
-  ngme_timing::Scope *_sm = new ngme_timing::Scope(ngme_timing::sw_M_us());
+  ngme_timing::Scope _sm(ngme_timing::sw_M_us());
   // Parenthesised so the DIAGONAL meets the vector first.
   //
   // `A.transpose() * d.asDiagonal() * v` groups as `(A^T * d) * v`, so Eigen
@@ -697,7 +704,7 @@ void BlockModel::sampleW_VY(bool burn_in) {
     M += AZ.transpose() * (Q_eps * get_residual_part());
   }
 
-  delete _sm;
+  _sm.stop();
   const SparseMatrix<double> *Gp, *Hp;
   { ngme_timing::Scope _s(ngme_timing::sw_G_us()); Gp = &get_G(inv_SV); }
   { ngme_timing::Scope _s(ngme_timing::sw_H_us()); Hp = &get_sqrt_AtSVA(); }
@@ -1303,10 +1310,11 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
       }
     } else {
       auto t_sv = std::chrono::steady_clock::now();
+      { ngme_timing::Scope _pv(ngme_timing::grad_V_us());
       // Avoid duplicating QQ factorization here; sampleW_VY() updates QQ
       sample_cond_V();
       // Both V blocks are drawn before W.
-      sample_cond_noise_V();
+      sample_cond_noise_V(); }
       t_sampleV_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                           std::chrono::steady_clock::now() - t_sv)
                           .count();
@@ -1328,6 +1336,7 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
     // Build observation score s = A^T D r for Z-chain
     auto t_bs = std::chrono::steady_clock::now();
     VectorXd s_full;
+    { ngme_timing::Scope _ps(ngme_timing::grad_score_us());
     if (!corr_measure) {
       VectorXd residual = get_residual(use_condW);
       VectorXd inv_noise_SV =
@@ -1343,12 +1352,14 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
       // A^T * (Q_eps * residual) is a matrix-vector product twice.
       s_full = A.transpose() * (Q_eps * residual);
     }
+    }
     t_build_s_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::steady_clock::now() - t_bs)
                         .count();
 
     // Aggregate gradients (latent + measurement Z-chain)
     auto t_g = std::chrono::steady_clock::now();
+    ngme_timing::Scope _pg(ngme_timing::grad_assemble_us());
     VectorXd current_grad = VectorXd::Zero(n_params);
     int pos = 0;   // parameter offset
     int woff2 = 0; // W-slice offset for s_full
@@ -1419,6 +1430,7 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
       current_grad.segment(n_la_params + n_merr, n_feff) = beta_g;
       noise_grad.tail(n_feff) += beta_g;
     }
+    _pg.stop();
     t_grad_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                      std::chrono::steady_clock::now() - t_g)
                      .count();
@@ -1451,6 +1463,7 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
     if (do_precond) {
       // per-latent block preconditioners
       auto t_pl = std::chrono::steady_clock::now();
+      ngme_timing::Scope _pl2(ngme_timing::grad_prec_lat_us());
       int pos2 = 0;
       // Measurement theta_sigma: the marginal Fisher information
       // (fisher_theta_sigma) or the complete-data Hessian, per
@@ -1486,6 +1499,7 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
         precond_sum.block(pos2, pos2, theta_len, theta_len) += Pi;
         pos2 += theta_len;
       }
+      _pl2.stop();
       t_prec_latent_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                               std::chrono::steady_clock::now() - t_pl)
                               .count();
@@ -1495,6 +1509,7 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
       // We add the full (j,k) matrix per latent. If Z_{jk} is unavailable, we
       // fall back to the Gauss–Newton term (second term only).
       auto t_pz = std::chrono::steady_clock::now();
+      ngme_timing::Scope _pz2(ngme_timing::grad_prec_ZGN_us());
       for (int li = 0; li < n_latent; ++li) {
         SparseMatrix<double> ADA_i;
         const auto &Ai = latents[li]->getA();
@@ -1604,12 +1619,14 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
           }
         }
       }
+      _pz2.stop();
       t_prec_ZGN_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                            std::chrono::steady_clock::now() - t_pz)
                            .count();
 
       // measurement/fixed-effects block
       auto t_pm = std::chrono::steady_clock::now();
+      ngme_timing::Scope _pm2(ngme_timing::grad_prec_merr_us());
       // (Measurement mu is a mean parameter: its block, and its cross term with
       // beta, are built jointly with beta in 1d below.)
 
@@ -1780,6 +1797,7 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
         }
       }
 
+      _pm2.stop();
       t_prec_merr_ms += std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::steady_clock::now() - t_pm)
                             .count();
@@ -2317,7 +2335,7 @@ void BlockModel::compute_rb_trace() {
 
     // compute for sigma: tr(Q^-1 K B_sigma.col(j)/SV K^T) for non-fixed
     // theta_sigma
-    ngme_timing::Scope *_ss = new ngme_timing::Scope(ngme_timing::rb_sec_sigma_us());
+    ngme_timing::Scope _ss(ngme_timing::rb_sec_sigma_us());
     vector<bool> fix_theta_sigma_vec = latents[i]->get_theta_unfixed_sigma();
     // One free component per j, so consecutive fixed components all have to be
     // stepped over; skipping a single one lands on a fixed column whenever two
@@ -2339,7 +2357,7 @@ void BlockModel::compute_rb_trace() {
         pv_sigma[j] = pvj; }
     }
 
-    delete _ss;
+    _ss.stop();
     ngme_timing::Scope _sz(ngme_timing::rb_sec_Z_us());
     // Add Z-related RB trace: T = (dZ_j)^T A_i^T D A_i Z_i
     // where D is measurement precision (depends on noise settings)
@@ -2689,8 +2707,13 @@ void BlockModel::update_QQ() {
   { ngme_timing::Scope _s(ngme_timing::qq_assemble_us());
     { ngme_timing::Scope _p(ngme_timing::qq_prod_us());
       // Caching K^T across Gibbs draws was tried here (K is constant over a
-      // sweep while 1/SV is not) and measured no better.
-      Q = K.transpose() * inv_SV.asDiagonal() * K; }
+      // sweep while 1/SV is not) and measured no better. What DOES pay is
+      // caching the destination slots of the triple product itself: K's
+      // pattern is fixed for the fit, so Eigen's symbolic phase is repeated
+      // every draw for nothing. The cache declines and this falls back to the
+      // direct product when the scatter list would be too large.
+      if (!qq_ata_.refill(K, inv_SV, Q, qq_ata_budget_))
+        Q = K.transpose() * inv_SV.asDiagonal() * K; }
     { ngme_timing::Scope _a(ngme_timing::qq_add_us());
       const SparseMatrix<double> &Me = get_QQ_measure();
       // QQ's pattern is the union of the two operands' and does not move while

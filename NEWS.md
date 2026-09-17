@@ -1,5 +1,6 @@
 # ngme2 (development version)
 
+* Adding an option to select the reordering method for the solvers on OSX. 
 * Fix the gradient of the fixed effects under non-Gaussian measurement noise. It
   weighted observations by `V / sigma^2` instead of `1 / (sigma^2 V)`, and
   ignored the correlation of correlated measurement noise, biasing the

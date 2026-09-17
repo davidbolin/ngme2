@@ -47,6 +47,7 @@ control_opt(
   solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
   solver_type = "llt",
   nonsym_solver = "normal_equations",
+  solver_order = c("auto", "default", "amd", "metis"),
   verbose = FALSE,
   store_traj = TRUE,
   robust = FALSE,
@@ -338,6 +339,16 @@ model is factorized when estimating \code{tr(K^-1 dK)}.
 operator here. Its one cost is that it squares the
 condition number of \code{K}, so switch to "lu" for an operator so
 ill-conditioned that the Cholesky of \code{t(K) K} fails.}
+
+\item{solver_order}{fill-reducing ordering for the \code{"accelerate"}
+backend. The ordering fixes the fill of the Cholesky factor and so the
+cost of every factorization, which is the largest single item in a fit
+with a high-dimensional latent field.
+\code{"auto"} (default) analyzes the pattern under each candidate ordering
+and keeps the one giving the smallest factor.
+Its cost is a fixed amount of extra symbolic work at setup, so pass
+\code{"default"} (leave Apple's choice, which is AMD) for a short fit.
+\code{"amd"} and \code{"metis"} (nested dissection) force one ordering.}
 
 \item{verbose}{print estimation}
 

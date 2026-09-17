@@ -228,6 +228,16 @@ class AccelerateImpl : public SparseSolverBase<AccelerateImpl<MatrixType_, UpLo_
   /** Sets the ordering algorithm to use. */
   void setOrder(SparseOrder_t order) { m_order = order; }
 
+  /** Size in bytes the numeric factor will occupy, as reported by the symbolic
+    * phase. This is a deterministic measure of fill, available without
+    * factorizing, so competing fill-reducing orderings can be compared by it
+    * rather than by timing a factorization. Returns 0 if analyzePattern() has
+    * not succeeded. */
+  std::size_t factorSize() const {
+    return m_symbolicFactorization ? m_symbolicFactorization->factorSize_Double
+                                   : 0;
+  }
+
  private:
   template <typename T>
   void buildAccelSparseMatrix(const SparseMatrix<T>& a, AccelSparseMatrix& A, std::vector<long>& columnStarts) {

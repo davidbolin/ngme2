@@ -86,6 +86,16 @@ NGME_PHASE(sw_ensureQQ_us)    // ensure_QQ(): assemble + factorize when stale
 NGME_PHASE(sw_M_us)           // the right-hand side M
 NGME_PHASE(sw_G_us)           // get_G(inv_SV)
 NGME_PHASE(sw_H_us)           // get_sqrt_AtSVA()
+// The remaining sections of BlockModel::grad(). The std::chrono locals beside
+// them accumulate MILLISECONDS, so on a fast model every pass truncates to
+// zero and those sections read as an unattributed residual; these do not.
+NGME_PHASE(grad_V_us)         // sample_cond_V + sample_cond_noise_V
+NGME_PHASE(grad_score_us)     // building the observation score s_full
+NGME_PHASE(grad_assemble_us)  // per-latent gradient aggregation
+NGME_PHASE(grad_prec_lat_us)  // preconditioner: latent block
+NGME_PHASE(grad_prec_ZGN_us)  // preconditioner: Z / GN block
+NGME_PHASE(grad_prec_merr_us) // preconditioner: measurement block
+NGME_PHASE(opt_step_us)       // the SGD step, which ENCLOSES every grad phase
 #undef NGME_PHASE
 
 // Scoped accumulator: adds its lifetime to the given counter.
@@ -93,16 +103,24 @@ NGME_PHASE(sw_H_us)           // get_sqrt_AtSVA()
 class Scope {
 public:
   explicit Scope(std::atomic<long long> &sink)
-      : sink_(sink), t0_(std::chrono::steady_clock::now()) {}
-  ~Scope() {
-    sink_.fetch_add(std::chrono::duration_cast<std::chrono::microseconds>(
-                        std::chrono::steady_clock::now() - t0_)
-                        .count(),
-                    std::memory_order_relaxed);
+      : sink_(&sink), t0_(std::chrono::steady_clock::now()) {}
+  Scope(const Scope &) = delete;
+  Scope &operator=(const Scope &) = delete;
+  // End the measurement early. For a section that cannot simply be wrapped in
+  // braces because the variables it declares are used after it.
+  void stop() {
+    if (sink_ == nullptr)
+      return;
+    sink_->fetch_add(std::chrono::duration_cast<std::chrono::microseconds>(
+                         std::chrono::steady_clock::now() - t0_)
+                         .count(),
+                     std::memory_order_relaxed);
+    sink_ = nullptr;
   }
+  ~Scope() { stop(); }
 
 private:
-  std::atomic<long long> &sink_;
+  std::atomic<long long> *sink_;
   std::chrono::steady_clock::time_point t0_;
 };
 // Counter increments made outside a Scope go through this, so they vanish with
@@ -114,6 +132,7 @@ inline void add(std::atomic<long long> &sink, long long v) {
 class Scope {
 public:
   explicit Scope(std::atomic<long long> &) {}
+  void stop() {}
 };
 inline void add(std::atomic<long long> &, long long) {}
 #endif

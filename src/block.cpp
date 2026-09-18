@@ -378,6 +378,8 @@ BlockModel::BlockModel(const Rcpp::List &block_model, unsigned long seed)
     if (cn.containsElementNamed("trace_probing_raise_budget"))
       trace_probing_raise_budget =
           Rcpp::as<double>(cn["trace_probing_raise_budget"]);
+    if (cn.containsElementNamed("trace_block_probe"))
+      trace_block_probe_ = Rcpp::as<bool>(cn["trace_block_probe"]);
     if (cn.containsElementNamed("trace_adapt_k"))
       trace_adapt_k = Rcpp::as<bool>(cn["trace_adapt_k"]);
   }
@@ -723,12 +725,15 @@ void BlockModel::sampleW_VY(bool burn_in) {
 
   // Sampling method using tricks, purely solve, not matrixL()
   { ngme_timing::Scope _s(ngme_timing::rmvn_us());
-    VectorXd W_draw = chol_QQ.rMVN(G, H, M, z1, z2);
-    setW(W_draw);
-
     if (rao_blackwell && !burn_in) {
-      VectorXd W_mean = chol_QQ.solve(M);
+      // Draw and conditional mean in ONE solve; see rMVN_mean().
+      VectorXd W_draw, W_mean;
+      chol_QQ.rMVN_mean(G, H, M, z1, z2, W_draw, W_mean);
+      setW(W_draw);
       set_cond_W(W_mean);
+    } else {
+      VectorXd W_draw = chol_QQ.rMVN(G, H, M, z1, z2);
+      setW(W_draw);
     } }
   // std::cout << "size of W and time of sampling is " << W.size() << " " <<
   // time << std::endl; if (debug) std::cout << "Finish sampling W" <<
@@ -1266,6 +1271,10 @@ void BlockModel::compute_grad_and_hessian(bool with_precond, double eps) {
     for (auto &l : latents)
       l->set_n_trace_iter(pending_k_budget_);
     pending_k_budget_ = -1;
+  }
+  for (auto &l : latents) {
+    l->set_in_polish(polish_phase_);
+    l->set_block_probe(trace_block_probe_);
   }
 
   bool do_precond = with_precond;

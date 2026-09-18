@@ -53,7 +53,7 @@ for (nm in names(models)) {
   t0 <- Sys.time()
   invisible(suppressWarnings(models[[nm]]$fit(
     seed = 4321, iterations = it, burnin = min(20L, it %/% 2L),
-    n_batch = if (it %% 10L == 0L) 10L else 1L, n_parallel_chain = 1,
+    n_parallel_chain = 1,
     max_num_threads = 1, solver_backend = backend, print_check_info = FALSE,
     verbose = FALSE, polish_iterations = 0L)))
   W <- as.numeric(Sys.time() - t0, units = "secs")

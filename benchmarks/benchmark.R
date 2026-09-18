@@ -73,7 +73,7 @@ run_one <- function(nm) {
     fit <- suppressWarnings(do.call(fitfun, c(list(
       seed = 4321, iterations = it, burnin = min(20L, it %/% 2L),
       # control_opt requires iterations to be a whole number of checkpoints.
-      n_batch = if (it %% 10L == 0L) 10L else 1L, n_parallel_chain = 1,
+      n_parallel_chain = 1,
       solver_backend = backend,
       max_num_threads = 1, print_check_info = FALSE, verbose = FALSE,
       polish_iterations = 0L), solver_arg())))
@@ -97,7 +97,7 @@ warmup <- function() {
   m <- models[[nm]]
   m$setup()
   invisible(try(suppressWarnings(do.call(m$fit, c(list(
-    seed = 4321, iterations = 10L, burnin = 5L, n_batch = 1L,
+    seed = 4321, iterations = 10L, burnin = 5L,
     n_parallel_chain = 1, solver_backend = backend,
     max_num_threads = 1, print_check_info = FALSE, verbose = FALSE,
     polish_iterations = 0L), solver_arg()))), silent = TRUE))

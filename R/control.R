@@ -14,7 +14,7 @@
 #'   The window points are sub-batch means spread evenly over the SECOND HALF of the run so
 #'   far, so the test is available from the first checkpoint and never regresses through the
 #'   optimiser's initial transient.
-#' Checks are evaluated every \code{iters_per_check = iterations / n_batch}. A parameter is marked
+#' Checks are evaluated every \code{iters_per_check} iterations. A parameter is marked
 #' converged only if every enabled parameter-level diagnostic (R-hat and Trend/Std) passes, so a
 #' single diagnostic cannot declare convergence on its own; the run stops when all parameters
 #' converge. Disable a diagnostic
@@ -34,10 +34,12 @@
 #'   \code{beta_init} on their original scale.
 #'
 #' @param n_parallel_chain number of parallel chains
-#' @param n_batch     number of checkpoints; optimization is split into \code{n_batch} equal batches
-#' @param iters_per_check how many iterations between convergence checkpoints.
-#'   Equivalent to \code{n_batch = iterations / iters_per_check}; give either, or
-#'   both when they agree.
+#' @param n_batch     \strong{Deprecated}; use \code{iters_per_check}. It set the
+#'   checkpoint interval as a division of the iteration budget, so raising
+#'   \code{iterations} silently checked less often.
+#' @param iters_per_check how many iterations between convergence checkpoints
+#'   (default 25). A fixed count, independent of \code{iterations}, which need
+#'   not be a multiple of it.
 #' @param n_min_batch   minimum number of checkpoints before any convergence
 #'   diagnostic is attempted (default 1).
 #' @param n_slope_check number of checkpoints used as the regression window for the trend test
@@ -102,6 +104,9 @@
 #'   Its cost is a fixed amount of extra symbolic work at setup, so pass
 #'   \code{"default"} (leave Apple's choice, which is AMD) for a short fit.
 #'   \code{"amd"} and \code{"metis"} (nested dissection) force one ordering.
+#' @param trace_block_probe estimate the operator-side traces of a non-separable
+#'   spacetime model with structured probes rather than a dense inverse of each
+#'   spatial block. Default \code{FALSE}.
 #' @param solver_type factorization type: "llt" or "ldlt"
 #' @param nonsym_solver how the operator matrix \code{K} of a non-symmetric
 #'   model is factorized when estimating \code{tr(K^-1 dK)}.
@@ -361,8 +366,8 @@ control_opt <- function(
     iterations = 500,
     estimation = TRUE,
     standardize_fixed = TRUE,
-    n_batch = 10,
-    iters_per_check = iterations / n_batch,
+    n_batch = NULL,
+    iters_per_check = 25,
     optimizer = precond_sgd(),
     start = NULL,
     start_sd = 0.5,
@@ -395,6 +400,7 @@ control_opt <- function(
     trace_probing_raise_budget = 1,
     n_trace_iter_k = NA_integer_,
     trace_adapt_k = FALSE,
+    trace_block_probe = FALSE,
     sampling_strategy = "all",
     solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
     solver_type = "llt",
@@ -409,7 +415,7 @@ control_opt <- function(
     fisher_refresh_every = 10L,
     stepsize_control = NULL,
     n_min_batch = 1,
-    n_slope_check = min(n_batch, 3),
+    n_slope_check = 3,
     trend_std_conv_check = TRUE,
     std_lim = 0.01,
     trend_lim = 2,
@@ -477,33 +483,53 @@ control_opt <- function(
     numerical_eps <- optimizer$numerical_eps
   }
 
-  # `iters_per_check` is how often the convergence checks run and is usually
-  # what a caller actually means; `n_batch` is how many checks the budget is cut
-  # into. They are two readings of one number, so supplying both is accepted as
-  # long as they agree. A contradiction is an error, and it names both
-  # values rather than refusing a consistent request.
-  if (!missing(iters_per_check)) {
-    stopifnot(
-      "iters_per_check must be a positive whole number" =
-        length(iters_per_check) == 1 && is.finite(iters_per_check) &&
-        iters_per_check >= 1 && iters_per_check == round(iters_per_check),
-      "iterations should be multiple of iters_per_check" =
-        iterations %% iters_per_check == 0
-    )
-    implied <- iterations / iters_per_check
-    if (!missing(n_batch) && n_batch != implied) {
-      stop("iters_per_check = ", iters_per_check, " and n_batch = ", n_batch,
-           " contradict each other: with iterations = ", iterations,
-           ", iters_per_check implies n_batch = ", implied,
-           ". Supply one, or two that agree.")
+  # `iters_per_check` is how often the convergence checks run, and is now the
+  # only way to set that. `n_batch` survives below as a DERIVED count -- how
+  # many checkpoints a run will have -- which sizes the diagnostic buffers and
+  # bounds the trend window; it is no longer something a caller sets.
+  # Deprecation notices fire once per session: a fit is often called in a loop,
+  # and a warning repeated hundreds of times buries whatever else is reported.
+  .warn_once <- function(...) {
+    if (!isTRUE(getOption("ngme2.n_batch_deprecated_warned", FALSE))) {
+      options(ngme2.n_batch_deprecated_warned = TRUE)
+      warning(..., call. = FALSE)
     }
-    n_batch <- implied
-  } else {
-    stopifnot(
-      "iterations should be multiple of n_batch" = iterations %% n_batch == 0
-    )
-    iters_per_check <- iterations / n_batch
   }
+  if (!is.null(n_batch)) {
+    # Deprecated, and NOT translated into iters_per_check. It set the interval
+    # as a division of the iteration budget, so raising `iterations` silently
+    # checked less often and a run sat past its convergence point; honouring it
+    # would preserve exactly the behaviour it is deprecated for. The explicit
+    # iters_per_check wins if one was given, otherwise the default applies.
+    if (!missing(iters_per_check)) {
+      .warn_once("n_batch is deprecated and was ignored in favour of ",
+                 "iters_per_check = ", iters_per_check, ".")
+    } else {
+      .warn_once("n_batch is deprecated and was IGNORED; the convergence ",
+                 "checks now run every iters_per_check = ", iters_per_check,
+                 " iterations regardless of `iterations`. Pass ",
+                 "iters_per_check to choose the interval.")
+    }
+  }
+  stopifnot(
+    "iters_per_check must be a positive whole number" =
+      length(iters_per_check) == 1 && is.finite(iters_per_check) &&
+      iters_per_check >= 1 && iters_per_check == round(iters_per_check)
+  )
+  iters_per_check <- min(as.integer(iters_per_check), as.integer(iterations))
+  # How many checkpoints the buffers must hold. `iterations` need NOT be a
+  # multiple of the interval: the final batch is clamped in C++.
+  n_batch <- as.integer(ceiling(iterations / iters_per_check))
+  # The trend window cannot be longer than the run has checkpoints. It used to
+  # follow n_batch by construction; now that the interval is fixed, a short run
+  # can have fewer checkpoints than the default window.
+  n_slope_check <- min(as.integer(n_slope_check), n_batch)
+  # n_min_batch and n_slope_check are denominated in CHECKPOINTS, so their
+  # meaning moves with the interval; neither can exceed the number of
+  # checkpoints a run will have. Clamping preserves the intent -- "wait this
+  # long before believing the diagnostic" -- where erroring would only punish a
+  # caller for a unit they did not choose.
+  n_min_batch <- min(as.integer(n_min_batch), n_batch)
 
   # resolve solver backend + factorization; send both to C++ and let it map
   solver_backend <- match.arg(solver_backend, solver_backend_list)
@@ -550,7 +576,6 @@ control_opt <- function(
       is.numeric(start_sd) && length(start_sd) == 1 && is.finite(start_sd),
     is.numeric(max_num_threads) && length(max_num_threads) == 1,
     iterations > 0 && n_batch > 0,
-    "iterations should be multiple of n_batch" = iterations %% n_batch == 0,
     "n_min_batch must be numeric" = is.numeric(n_min_batch),
     "n_min_batch must be a single value" = length(n_min_batch) == 1,
     "n_min_batch must be greater than 0" = n_min_batch > 0,
@@ -639,6 +664,7 @@ control_opt <- function(
     standardize_fixed = standardize_fixed,
     n_parallel_chain = n_parallel_chain,
     n_batch = n_batch,
+    iters_per_check = iters_per_check,
     n_min_batch = n_min_batch, # minimum batches before checking
     n_slope_check = n_slope_check, # window for trend regression
     std_lim = std_lim,
@@ -688,6 +714,7 @@ control_opt <- function(
     trace_probing_raise_budget = trace_probing_raise_budget,
     n_trace_iter_k = as.integer(n_trace_iter_k),
     trace_adapt_k = trace_adapt_k,
+    trace_block_probe = trace_block_probe,
     print_check_info = print_check_info,
     verbose = verbose,
     store_traj = store_traj,
@@ -776,7 +803,7 @@ control_opt_batch_ci <- function(
     optimizer = sgd(stepsize = 0.03),
     burnin = 100,
     iterations = 2000,
-    n_batch = 20,
+    iters_per_check = 100,
     n_parallel_chain = 4,
     alpha = 0.501,
     t0 = 1,
@@ -786,7 +813,7 @@ control_opt_batch_ci <- function(
     optimizer = optimizer,
     burnin = burnin,
     iterations = iterations,
-    n_batch = n_batch,
+    iters_per_check = iters_per_check,
     n_parallel_chain = n_parallel_chain,
     store_traj = TRUE,
     trend_std_conv_check = FALSE,
@@ -914,6 +941,7 @@ update_control_ngme <- function(control_ngme, control_opt) {
     control_opt$trace_probing_raise_budget
   control_ngme$n_trace_iter_k <- control_opt$n_trace_iter_k
   control_ngme$trace_adapt_k <- control_opt$trace_adapt_k
+  control_ngme$trace_block_probe <- control_opt$trace_block_probe
   control_ngme$stepsize <- control_opt$stepsize
   control_ngme$solver_backend <- control_opt$solver_backend
   control_ngme$solver_factor <- control_opt$solver_factor

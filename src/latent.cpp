@@ -788,6 +788,8 @@ void Latent::update_each_iter(bool need_precond) {
   uopts.compute_trace = !fix_flag[latent_fix_theta_K] && !zero_trace;
   uopts.robust_reanalyze = robust_;
   uopts.n_trace_iter = n_trace_iter_;
+  uopts.in_polish = in_polish_;
+  uopts.block_probe = block_probe_;
   uopts.solver_type = solver_type_;
   uopts.trace_probing = trace_probing_;
   uopts.trace_probing_max_dist = trace_probing_max_dist_;

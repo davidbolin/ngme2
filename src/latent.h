@@ -128,6 +128,8 @@ protected:
     int solver_type_ {0};
     int nonsym_solver_ {0};
     int n_trace_iter_ {8};
+    bool in_polish_ {false};
+    bool block_probe_ {false};
     bool trace_probing_ {true};
     int trace_probing_max_dist_ {4};
     // Ceiling the probe budget can reach over the fit; the colouring search is
@@ -192,6 +194,8 @@ public:
     // once, so a budget changed after that is picked up through the update
     // options rather than at initialisation.
     void set_n_trace_iter(int N) { n_trace_iter_ = N; }
+    void set_in_polish(bool v) { in_polish_ = v; }
+    void set_block_probe(bool v) { block_probe_ = v; }
     int get_n_theta_sigma() const      {return n_theta_sigma; }
     int get_n_theta_mu() const         {return n_theta_mu; }
     int get_n_theta_nu() const         {return n_theta_nu; }

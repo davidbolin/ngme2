@@ -396,7 +396,17 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   std::vector<bool> converge(n_params, false);
   bool all_converge = false;
   int steps = 0;
-  int batch_steps = (iterations / n_batch);
+  // How many iterations between convergence checkpoints. A FIXED count, not a
+  // division of the budget: how often the run should look at itself has nothing
+  // to do with how long it is allowed to run, and tying the two meant a long
+  // budget silently checked rarely -- which costs far more in iterations spent
+  // past convergence than the checks themselves ever cost.
+  int batch_steps =
+      control_opt.containsElementNamed("iters_per_check")
+          ? std::max(1, Rcpp::as<int>(control_opt["iters_per_check"]))
+          : (iterations / std::max(1, n_batch));
+  if (batch_steps > iterations)
+    batch_steps = iterations;
   // Budget synchronisation is driven from here rather than from inside each
   // chain. trace_adapt_every is the minimum number of ITERATIONS between
   // updates, rounded up to the next checkpoint because that is where the chains
@@ -440,6 +450,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
           : 0.3;
 
   int curr_batch = 0;
+  // The final iterate of each chain, kept for the no-polish report below.
+  MatrixXd last_iterate = MatrixXd::Zero(n_chains, n_params);
   double stepsize_decay_scale = 1.0;
   double stepsize_decay_prev_norm = std::numeric_limits<double>::infinity();
   int stepsize_decay_bad_epochs = 0;
@@ -459,11 +471,14 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     }
 
 
-    // Run batch_steps iterations using unified SGD step (computes grad and,
-    // optionally, precond)
+    // Run this_batch iterations using unified SGD step (computes grad and,
+    // optionally, precond). The last batch is clamped so the run stops exactly
+    // at `iterations`: the checkpoint interval is now a fixed number of
+    // iterations rather than a division of the budget, so it need not divide it.
+    const int this_batch = std::min(batch_steps, iterations - steps);
     std::atomic<bool> sgd_failed(false);
     std::string sgd_error;
-    for (int step = 0; step < batch_steps; step++) {
+    for (int step = 0; step < this_batch; step++) {
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) num_threads(n_threads_chain)
 #endif
@@ -489,7 +504,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
             batch_sum.row(i) += param;
             batch_sq_sum.row(i) += param.array().square().matrix();
             if (n_sub_batch > 0) {
-              int sb = (step * n_sub_batch) / batch_steps;
+              int sb = (step * n_sub_batch) / std::max(1, this_batch);
               if (sb >= n_sub_batch)
                 sb = n_sub_batch - 1;
               sub_batch_sum[sb].row(i) += param;
@@ -524,7 +539,8 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
         Rcpp::stop("C++ exception in parallel SGD step: %s", sgd_error.c_str());
       }
     }
-    steps += batch_steps;
+    last_iterate = mat;
+    steps += this_batch;
 
     // Agree one probe budget for every chain, here and nowhere else. The
     // parallel-for above has just joined, which makes this the one point in the
@@ -556,6 +572,12 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     }
 
     // compute mean and variance
+    if (curr_batch >= means.rows()) {
+      // The caller asked for more checkpoints than the buffer was sized for;
+      // grow rather than write past the end.
+      means.conservativeResize(curr_batch + 8, Eigen::NoChange);
+      vars.conservativeResize(curr_batch + 8, Eigen::NoChange);
+    }
     means.row(curr_batch) = mat.colwise().mean();
     for (int k = 0; k < n_params; k++) {
       if (n_chains > 1) {
@@ -678,9 +700,12 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
           hist_chain_mean.push_back(cm);
           hist_mean.push_back(m);
           hist_var.push_back(v);
-          hist_iter.push_back(steps - batch_steps +
+          // this_batch, not batch_steps: the final batch is clamped so the run
+          // lands exactly on `iterations`, and labelling its sub-batches with
+          // the nominal interval would place them before the batch began.
+          hist_iter.push_back(steps - this_batch +
                               (int)std::llround((double)(b + 1) *
-                                                (double)batch_steps /
+                                                (double)this_batch /
                                                 (double)n_sub_batch));
         }
       } else {
@@ -1353,6 +1378,11 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
     // run of passes behind it, and the search has just provided one; taking it
     // once, at this point, keeps the search a function of the matrices alone
     // and confines anything machine-dependent to the polish budget.
+    // Announce the phase to every chain first, unconditionally: the cost rule
+    // below may decline, and an estimator that must be exact for the polish
+    // cannot have that depend on whether a probe budget was re-sized.
+    for (int c = 0; c < n_chains; c++)
+      ngmes[c]->enter_polish_phase();
     bool cost_rule_live = false;
     if (trace_adapt_cost_rule) {
       for (int c = 0; c < n_chains; c++)
@@ -1627,12 +1657,19 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
   // call needs to resume that chain
   MatrixXd final_params(n_chains, n_params);
   for (i = 0; i < n_chains; i++) {
-    // Average of the iterates: over the polish window when there was one,
-    // otherwise over the last batch as before.
-    Eigen::VectorXd avg_param =
-        (polish_done > 0)
-            ? (polish_sum.row(i) / polish_done).transpose()
-            : (batch_sum.row(i) / batch_steps).transpose();
+    // With a polish, the estimate is the mean over the WHOLE polish phase --
+    // the only averaging window here that means anything, the polish being by
+    // definition the post-convergence stretch.
+    //
+    // Without one the run did not converge, so there is no stationary stretch
+    // to average: a Polyak-Ruppert mean would assert a stationarity that was
+    // never reached, and averaging over the last batch would additionally make
+    // the answer depend on the checkpoint interval. Report the last iterate.
+    Eigen::VectorXd avg_param(n_params);
+    if (polish_done > 0)
+      avg_param = (polish_sum.row(i) / polish_done).transpose();
+    else
+      avg_param = last_iterate.row(i).transpose();
     ngmes[i]->set_parameter_and_update(avg_param, false);
     final_params.row(i) = avg_param.transpose();
 

@@ -10,6 +10,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include "MatrixAlgebra.h"
+#include <functional>
+#include <random>
 #include <unsupported/Eigen/KroneckerProduct>
 
 // Below this the streamline-diffusion stabilization term is not formed at all;
@@ -689,7 +691,7 @@ void Spacetime::stab_dSi(int i, const VectorXd &bx, const VectorXd &by,
   const VectorXd dv = 2.0 * (gy.array() * by.array()).matrix();
   const VectorXd dw =
       (bx.array() * gy.array() + gx.array() * by.array()).matrix();
-  const SparseMatrix<double> Hc = Hxy + Hyx;
+  const SparseMatrix<double> &Hc = stab_Hc_;
   out = du.asDiagonal() * Hxx * u.asDiagonal() +
         u.asDiagonal() * Hxx * du.asDiagonal() +
         dv.asDiagonal() * Hyy * v.asDiagonal() +
@@ -738,7 +740,7 @@ void Spacetime::d2Stab_block(int i, const VectorXd &bxm, const VectorXd &bym,
   const VectorXd wmn =
       (bxm.array() * byn.array() + bxn.array() * bym.array()).matrix();
 
-  const SparseMatrix<double> Hc = Hxy + Hyx;
+  const SparseMatrix<double> &Hc = stab_Hc_;
   SparseMatrix<double> d2Si =
       umn.asDiagonal() * Hxx * u.asDiagonal() +
       u.asDiagonal() * Hxx * umn.asDiagonal() +
@@ -881,6 +883,8 @@ bool Spacetime::analytic_state(const VectorXd &theta_K, double &c_out,
     stab_gy_.assign(nblk, VectorXd());
     stab_Si_.assign(nblk, SparseMatrix<double>());
     stab_norm_.assign(nblk, 0.0);
+    if (stab_Hc_.rows() != Hxx.rows())
+      stab_Hc_ = Hxy + Hyx;
   }
   for (int b = 0; b < nblk; ++b) {
     if (fix_gamma) {
@@ -1409,6 +1413,128 @@ bool Spacetime::compute_traces_structured(const VectorXd &theta,
         return false; // fall back to the generic path rather than guess
     }
     hk_lu_ready = true;
+
+    // Structured probing of the block traces, as an alternative to the dense
+    // inverse. OFF unless control_opt(trace_block_probe = TRUE); see there for
+    // why, and read that note before switching it on.
+    //
+    // The dense inverse costs ns right-hand sides per block; this costs
+    // (1 + n_free) * n_colours, and the colour count follows the LOCAL
+    // connectivity of the mesh rather than ns, so the saving grows with the
+    // problem. Colouring rather than dense probes: the estimator's error is its
+    // off-diagonal terms, and a distance-d colouring leaves only pairs more
+    // than d edges apart, which for the inverse of a local operator have
+    // already decayed -- accuracy improves geometrically in d instead of as
+    // 1/sqrt(count). See include/probing.h.
+    //
+    // Never during the polish, and never when the dense inverse is the cheaper
+    // of the two, so a block too small to benefit keeps the exact path rather
+    // than paying more for a worse answer.
+    int n_free_p = 0;
+    for (int j = 0; j < n_theta_K; ++j)
+      if (opts.fix_mask_thetaK.empty() || !opts.fix_mask_thetaK[j])
+        ++n_free_p;
+    int probe_nc = 0;
+    if (opts.block_probe && !opts.in_polish && n_free_p > 0) {
+      if (probe_pat_nnz_ != (long long)Kblk[0].nonZeros()) {
+        probe_adj_ = ngme_probing::build_adjacency(Kblk[0]);
+        probe_colour_.assign(kProbeMaxDist, std::vector<int>());
+        probe_ncol_.assign(kProbeMaxDist, -1);
+        probe_pat_nnz_ = (long long)Kblk[0].nonZeros();
+      }
+      // Largest distance that still beats the inverse; distance 3 is the floor,
+      // below which the estimate is too coarse to steer the optimiser at all.
+      for (int d = kProbeMaxDist; d >= 3; --d) {
+        if (probe_ncol_[d - 1] < 0) {
+          int nc = 0;
+          probe_colour_[d - 1] =
+              ngme_probing::distance_colouring(probe_adj_, d, n, nc);
+          probe_ncol_[d - 1] = nc;
+        }
+        const int nc = probe_ncol_[d - 1];
+        if (nc <= 0 || (long long)(1 + n_free_p) * nc >= (long long)n)
+          continue;
+        probe_nc = nc;
+        break;
+      }
+    }
+    if (probe_nc > 0) {
+      const int N = probe_nc;
+      const std::vector<int> *colptr = nullptr;
+      for (int d = kProbeMaxDist; d >= 1; --d)
+        if (probe_ncol_[d - 1] == N) { colptr = &probe_colour_[d - 1]; break; }
+      const std::vector<int> &colour = *colptr;
+      std::mt19937_64 gen(opts.trace_seed ? opts.trace_seed : 20250918u);
+      // One probe per colour class: signs on its own class, zero elsewhere,
+      // scaled by sqrt(N) so the same 1/N averaging returns the trace.
+      const double sc = std::sqrt((double)N);
+      MatrixXd U = MatrixXd::Zero(n, N);
+      for (int r = 0; r < n; ++r)
+        U(r, colour[r]) = (gen() & 1ull) ? sc : -sc;
+      const double invN = 1.0 / (double)N;
+      auto reduce = [&](const MatrixXd &MQ) {
+        double t = 0.0;
+        for (int c = 0; c < N; ++c)
+          t += U.col(c).dot(MQ.col(c));
+        return t * invN;
+      };
+      std::vector<MatrixXd> QU(n_distinct);
+      for (int b = 0; b < n_distinct; ++b)
+        QU[b] = hk_lu_[b]->solve(U);
+      // Block weighting is the exact path's; only the estimator differs.
+      auto over_blocks = [&](const std::function<double(int)> &f) {
+        double acc = 0.0;
+        if (uniform_interior) {
+          acc += f(0);
+          if (nt > 1)
+            acc += (double)(nt - 1) * f(std::min(1, n_distinct - 1));
+        } else {
+          for (int t = 0; t < nt; ++t)
+            acc += f(t);
+        }
+        return acc;
+      };
+      trace_vals.setZero();
+      for (int j = 0; j < n_theta_K; ++j) {
+        if (!opts.fix_mask_thetaK.empty() && opts.fix_mask_thetaK[j])
+          continue;
+        trace_vals(j) =
+            over_blocks([&](int b) { return reduce(dK_block(j, b) * QU[b]); });
+      }
+      trace_ready = true;
+      if (opts.compute_HK_trace) {
+        if (HK_trace.rows() != n_theta_K || HK_trace.cols() != n_theta_K)
+          HK_trace = MatrixXd::Zero(n_theta_K, n_theta_K);
+        else
+          HK_trace.setZero();
+        // S[b][k] is the invariant of the PAIR loop, formed once per parameter
+        // exactly as the dense path forms X.
+        std::vector<std::vector<MatrixXd>> S(
+            n_distinct, std::vector<MatrixXd>(n_theta_K));
+        for (int b = 0; b < n_distinct; ++b)
+          for (int k = 0; k < n_theta_K; ++k) {
+            MatrixXd rhs = dK_block(k, b) * QU[b];
+            S[b][k] = hk_lu_[b]->solve(rhs);
+          }
+        for (int j = 0; j < n_theta_K; ++j)
+          for (int k = j; k < n_theta_K; ++k) {
+            const double t1 = over_blocks(
+                [&](int b) { return reduce(dK_block(j, b) * S[b][k]); });
+            const double t2 = over_blocks([&](int b) {
+              const SparseMatrix<double, 0, int> &d2 = get_d2K(j, k);
+              if (d2.rows() != (long long)ns_ * nt)
+                return 0.0;
+              MatrixXd D2Q = get_block(d2, rep[b] * n, rep[b] * n) * QU[b];
+              return reduce(D2Q);
+            });
+            const double val = -t1 + t2;
+            HK_trace(j, k) = val;
+            if (j != k)
+              HK_trace(k, j) = val;
+          }
+      }
+      return true;
+    }
 
     // One dense inverse per block replaces every dense solve on this path: the
     // n_theta_K first-order solves here and, when the Hessian is wanted, the

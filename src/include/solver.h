@@ -541,6 +541,24 @@ public:
     return solve(x);
   }
 
+  // The draw and the Rao-Blackwellised conditional mean share a factorization
+  // and differ only by the perturbation of the right-hand side. A triangular
+  // solve is bound by reading the factor, so the two together traverse it once
+  // instead of twice. The arithmetic is that of the two calls it replaces: the
+  // same solve() path, batched over columns.
+  inline void rMVN_mean(const SparseMatrix<double, 0, int> &G,
+                        const SparseMatrix<double, 0, int> &H,
+                        Eigen::VectorXd &mu, Eigen::VectorXd &z1,
+                        Eigen::VectorXd &z2, Eigen::VectorXd &draw,
+                        Eigen::VectorXd &mean) {
+    Eigen::MatrixXd rhs(mu.size(), 2);
+    rhs.col(0) = G.transpose() * z1 + H.transpose() * z2 + mu;
+    rhs.col(1) = mu;
+    Eigen::MatrixXd sol = solve(rhs);
+    draw = sol.col(0);
+    mean = sol.col(1);
+  }
+
   inline Eigen::VectorXd solve(Eigen::VectorXd &v) {
     if (use_lu) {
       require_lu();

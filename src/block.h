@@ -84,6 +84,8 @@ protected:
   int n_gibbs;
   bool debug, reduce_var;
   bool robust{false};
+  bool trace_block_probe_{false};
+  bool polish_phase_{false};
   int nig_param_std{0};
   double reduce_power, threshold;
 
@@ -310,6 +312,12 @@ public:
   // the cost form. Called once, where the polish begins. Returns false if the
   // measurement is not usable, leaving the budget where it is.
   bool begin_polish_trace_rule();
+  // The optimiser has entered the post-convergence polish. Separate from
+  // in_polish_, which begin_polish_trace_rule() sets only when the probe-cost
+  // rule engages and which therefore stays false on many fits: this is a plain
+  // fact about which phase the run is in, and estimators that must switch
+  // themselves off for the polish need that fact unconditionally.
+  void enter_polish_phase() { polish_phase_ = true; }
   // Adopt a budget chosen for every chain at once. Applying it is separated
   // from suggesting it so the value can be agreed across chains first; see the
   // note on suggested_trace_N_.

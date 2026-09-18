@@ -19,6 +19,7 @@
 #include <memory>
 #include <random>
 
+#include "include/probing.h"
 #include "include/solver.h"
 #include "include/timer.h"
 
@@ -48,6 +49,15 @@ struct UpdateOptions {
   bool compute_trace{true};
   // Seed for the Hutchinson probe vectors.
   unsigned int trace_seed{0};
+  // Estimate the operator-side traces with structured probes instead of a
+  // dense block inverse. Off unless the caller asks; see control_opt().
+  bool block_probe{false};
+  // True once the optimiser has entered the post-convergence polish. Any
+  // estimator that trades accuracy for speed switches itself off here: the
+  // polish exists to drive down Monte Carlo error and stops on a statistic
+  // measuring it, so a noisy trace there inflates the very quantity being
+  // waited on.
+  bool in_polish{false};
   // Deprecated / no longer read: the symbolic analyze() is now re-run exactly
   // when K's sparsity pattern changes, which is strictly better than an
   // unconditional refresh (analyze() is a pure function of the pattern).
@@ -436,6 +446,17 @@ private:
   // Which gamma components parameter m drives in block i, as the derivative of
   // each component with respect to it. False when m is not a gamma parameter.
   bool gamma_basis(int m, int i, VectorXd &bx, VectorXd &by) const;
+  // Hxy + Hyx. Both are fixed by the mesh, so this is formed once rather than
+  // rebuilt in every derivative call.
+  mutable SparseMatrix<double> stab_Hc_;
+  // Distance-d colourings of the spatial block's graph, for structured trace
+  // probes; each distance is coloured at most once and kept, since the mesh
+  // does not move during a fit.
+  mutable ngme_probing::Adjacency probe_adj_;
+  mutable std::vector<std::vector<int>> probe_colour_;
+  mutable std::vector<int> probe_ncol_;
+  mutable long long probe_pat_nnz_{-1};
+  static constexpr int kProbeMaxDist = 4;
   // dSi/dtheta for block i. Shared by the first and second derivatives.
   void stab_dSi(int i, const VectorXd &bx, const VectorXd &by,
                 SparseMatrix<double> &out) const;

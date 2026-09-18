@@ -77,6 +77,12 @@ public:
 
   // Switch every replicate over to the cost-based budget rule and hand back
   // whether any of them could. Called once, where the polish begins.
+  // Tell every replicate that the polish has begun. Unconditional, unlike the
+  // trace rule below, which may decline.
+  void enter_polish_phase() {
+    for (unsigned i = 0; i < ngme_repls.size(); i++)
+      ngme_repls[i]->enter_polish_phase();
+  }
   bool begin_polish_trace_rule() {
     bool any = false;
     for (int i = 0; i < n_repl; i++)

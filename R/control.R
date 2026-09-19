@@ -160,6 +160,20 @@
 #'   successive half-differences cancel, \code{|sum| / sum|.|} below this
 #'   (default 0.5). One still travelling toward stationarity moves the same way
 #'   each time and keeps the ratio high.
+#' @param mc_se_lim target for the polish, as a multiple of the statistical
+#'   error: it runs until the Monte Carlo error of the reported average falls
+#'   under \code{mc_se_lim * se_stat}. Total error is then about
+#'   \code{sqrt(1 + mc_se_lim^2) * se_stat} and the cost goes as
+#'   \code{1 / mc_se_lim^2}, so tightening it is quadratically expensive for a
+#'   shrinking return. It touches only the polish phace, the search is unaffected.
+#' @param stationarity_dir_scaled compare \code{dir * sqrt(n)} against
+#'   \code{stationarity_dir_lim} rather than \code{dir} alone, and hold the
+#'   direction history to \code{stationarity_min_checks} rather than twice it.
+#'   \code{dir = |sum d| / sum|d|} has expectation \code{1/sqrt(n)} under a
+#'   stationary null, so a fixed threshold gets steadily more permissive as the
+#'   history fills, and the window length ends up setting the test's strictness.
+#'   Scaling by \code{sqrt(n)} holds it constant, which matters because the
+#'   direction this errs in is premature release of a drifting parameter.
 #' @param stationarity_min_checks checkpoints of history required before a
 #'   parameter may be called a flat direction (default 6).
 #' @param polish_stepsize_factor multiplies the step size at the moment the
@@ -430,11 +444,12 @@ control_opt <- function(
     stationarity_eff = 1.5,
     polish_floor_frac = 0.25,
     stationarity_ratio_lim = 1.0,
-    stationarity_dir_lim = 0.5,
+    stationarity_dir_lim = 0.5 * sqrt(6),
     stationarity_min_checks = 6L,
+    stationarity_dir_scaled = TRUE,
     conv_criterion = c("stationarity", "drift"),
     mc_se_conv_check = TRUE,
-    mc_se_lim = 0.5,
+    mc_se_lim = 0.7,
     max_stepsize_decays = 1L,
     n_settle_checks = 3L,
     stepsize_decay_precision_gamma = 0.5,
@@ -682,6 +697,7 @@ control_opt <- function(
     stationarity_ratio_lim = stationarity_ratio_lim,
     stationarity_dir_lim = stationarity_dir_lim,
     stationarity_min_checks = as.integer(stationarity_min_checks),
+    stationarity_dir_scaled = stationarity_dir_scaled,
     conv_criterion = match.arg(conv_criterion),
     mc_se_conv_check = mc_se_conv_check,
     mc_se_lim = mc_se_lim,

@@ -456,7 +456,7 @@ private:
   mutable std::vector<std::vector<int>> probe_colour_;
   mutable std::vector<int> probe_ncol_;
   mutable long long probe_pat_nnz_{-1};
-  static constexpr int kProbeMaxDist = 4;
+  static constexpr int kProbeMaxDist = 7;
   // dSi/dtheta for block i. Shared by the first and second derivatives.
   void stab_dSi(int i, const VectorXd &bx, const VectorXd &by,
                 SparseMatrix<double> &out) const;

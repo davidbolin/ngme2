@@ -8,7 +8,7 @@ control_opt_batch_ci(
   optimizer = sgd(stepsize = 0.03),
   burnin = 100,
   iterations = 2000,
-  n_batch = 20,
+  iters_per_check = 100,
   n_parallel_chain = 4,
   alpha = 0.501,
   t0 = 1,
@@ -23,8 +23,6 @@ control_opt_batch_ci(
 
 \item{iterations}{optimization iterations.}
 
-\item{n_batch}{number of checkpoints.}
-
 \item{n_parallel_chain}{number of parallel chains.}
 
 \item{alpha}{polynomial stepsize exponent for \code{poly_decay(alpha, t0)}.}
@@ -36,6 +34,8 @@ iterations where polynomial schedule scaling is disabled.}
 
 \item{...}{additional arguments forwarded to \code{control_opt()} to override
 defaults.}
+
+\item{n_batch}{number of checkpoints.}
 }
 \value{
 object of class \code{control_opt}.

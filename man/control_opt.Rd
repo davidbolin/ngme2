@@ -10,8 +10,8 @@ control_opt(
   iterations = 500,
   estimation = TRUE,
   standardize_fixed = TRUE,
-  n_batch = 10,
-  iters_per_check = iterations/n_batch,
+  n_batch = NULL,
+  iters_per_check = 25,
   optimizer = precond_sgd(),
   start = NULL,
   start_sd = 0.5,
@@ -43,6 +43,7 @@ control_opt(
   trace_probing_raise_budget = 1,
   n_trace_iter_k = NA_integer_,
   trace_adapt_k = FALSE,
+  trace_block_probe = FALSE,
   sampling_strategy = "all",
   solver_backend = if (Sys.info()["sysname"] == "Darwin") "accelerate" else "cholmod",
   solver_type = "llt",
@@ -56,7 +57,7 @@ control_opt(
   fisher_refresh_every = 10L,
   stepsize_control = NULL,
   n_min_batch = 1,
-  n_slope_check = min(n_batch, 3),
+  n_slope_check = 3,
   trend_std_conv_check = TRUE,
   std_lim = 0.01,
   trend_lim = 2,
@@ -71,11 +72,12 @@ control_opt(
   stationarity_eff = 1.5,
   polish_floor_frac = 0.25,
   stationarity_ratio_lim = 1,
-  stationarity_dir_lim = 0.5,
+  stationarity_dir_lim = 0.5 * sqrt(6),
   stationarity_min_checks = 6L,
+  stationarity_dir_scaled = TRUE,
   conv_criterion = c("stationarity", "drift"),
   mc_se_conv_check = TRUE,
-  mc_se_lim = 0.5,
+  mc_se_lim = 0.7,
   max_stepsize_decays = 1L,
   n_settle_checks = 3L,
   stepsize_decay_precision_gamma = 0.5,
@@ -101,11 +103,13 @@ mapped from the original design scale to that standardized basis. Set to
 \code{FALSE} to keep both the design matrix and any provided
 \code{beta_init} on their original scale.}
 
-\item{n_batch}{number of checkpoints; optimization is split into \code{n_batch} equal batches}
+\item{n_batch}{\strong{Deprecated}; use \code{iters_per_check}. It set the
+checkpoint interval as a division of the iteration budget, so raising
+\code{iterations} silently checked less often.}
 
-\item{iters_per_check}{how many iterations between convergence checkpoints.
-Equivalent to \code{n_batch = iterations / iters_per_check}; give either, or
-both when they agree.}
+\item{iters_per_check}{how many iterations between convergence checkpoints
+(default 25). A fixed count, independent of \code{iterations}, which need
+not be a multiple of it.}
 
 \item{optimizer}{choose different sgd optimization method,
 currently support "sgd", "sgld", "precond_sgd", "momentum", "adagrad", "rmsprop", "adam", "adamW"
@@ -318,6 +322,10 @@ used for the operator traces, which enter the gradient of the operator
 parameters. Without it only the budget for the block precision is retuned
 and the operator keeps the budget it was built with. Off by default.}
 
+\item{trace_block_probe}{estimate the operator-side traces of a non-separable
+spacetime model with structured probes rather than a dense inverse of each
+spatial block. Default \code{FALSE}.}
+
 \item{sampling_strategy}{subsampling method of replicates of model, c("all", "ws")
 "all" means using all replicates in each iteration,
 "ws" means weighted sampling (each iteration use 1 replicate to compute the gradient, the sample probability is proption to its number of observations)}
@@ -460,8 +468,24 @@ each time and keeps the ratio high.}
 \item{stationarity_min_checks}{checkpoints of history required before a
 parameter may be called a flat direction (default 6).}
 
+\item{stationarity_dir_scaled}{compare \code{dir * sqrt(n)} against
+\code{stationarity_dir_lim} rather than \code{dir} alone, and hold the
+direction history to \code{stationarity_min_checks} rather than twice it.
+\code{dir = |sum d| / sum|d|} has expectation \code{1/sqrt(n)} under a
+stationary null, so a fixed threshold gets steadily more permissive as the
+history fills, and the window length ends up setting the test's strictness.
+Scaling by \code{sqrt(n)} holds it constant, which matters because the
+direction this errs in is premature release of a drifting parameter.}
+
 \item{conv_criterion}{which stopping rule the search phase uses:
 \code{"stationarity"} (default) or \code{"drift"}.}
+
+\item{mc_se_lim}{target for the polish, as a multiple of the statistical
+error: it runs until the Monte Carlo error of the reported average falls
+under \code{mc_se_lim * se_stat}. Total error is then about
+\code{sqrt(1 + mc_se_lim^2) * se_stat} and the cost goes as
+\code{1 / mc_se_lim^2}, so tightening it is quadratically expensive for a
+shrinking return. It touches only the polish phace, the search is unaffected.}
 
 \item{continue_chains}{make \code{ngme(start = previous_fit)} a true
   continuation (default \code{TRUE}). Three things follow from it:
@@ -501,7 +525,7 @@ Convergence diagnostics (multi-chain):
   The window points are sub-batch means spread evenly over the SECOND HALF of the run so
   far, so the test is available from the first checkpoint and never regresses through the
   optimiser's initial transient.
-Checks are evaluated every \code{iters_per_check = iterations / n_batch}. A parameter is marked
+Checks are evaluated every \code{iters_per_check} iterations. A parameter is marked
 converged only if every enabled parameter-level diagnostic (R-hat and Trend/Std) passes, so a
 single diagnostic cannot declare convergence on its own; the run stops when all parameters
 converge. Disable a diagnostic

@@ -170,6 +170,10 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
       control_opt.containsElementNamed("stationarity_dir_lim")
           ? Rcpp::as<double>(control_opt["stationarity_dir_lim"])
           : 0.5;
+  const bool stationarity_dir_scaled =
+      control_opt.containsElementNamed("stationarity_dir_scaled")
+          ? Rcpp::as<bool>(control_opt["stationarity_dir_scaled"])
+          : false;
   const int stationarity_min_checks =
       control_opt.containsElementNamed("stationarity_min_checks")
           ? Rcpp::as<int>(control_opt["stationarity_min_checks"])
@@ -1061,7 +1065,7 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
                 }
                 stat_dir_hist[k].push_back(mB - mA);
                 while ((int)stat_dir_hist[k].size() >
-                       2 * stationarity_min_checks)
+                       (stationarity_dir_scaled ? 1 : 2) * stationarity_min_checks)
                   stat_dir_hist[k].pop_front();
               }
               // Only a parameter that is both unsettled and non-directional is
@@ -1074,7 +1078,14 @@ Rcpp::List estimate_cpp(const Rcpp::List &R_ngme,
                   dsum += v; dabs += std::fabs(v); }
                 if (dabs <= 0.0) continue;
                 const double dir = std::fabs(dsum) / dabs;
-                if (dir < stationarity_dir_lim && !stat_flat[k]) {
+                // dir has expectation 1/sqrt(n) under a stationary null, so an
+                // unscaled threshold means something different at every history
+                // length. Scaling makes the test's size independent of n.
+                const double dir_stat =
+                    stationarity_dir_scaled
+                        ? dir * std::sqrt((double)stat_dir_hist[k].size())
+                        : dir;
+                if (dir_stat < stationarity_dir_lim && !stat_flat[k]) {
                   stat_flat[k] = true;
                   if (verbose_enabled) {
                     ngme_io::err() << "[stationarity] "

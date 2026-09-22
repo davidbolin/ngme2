@@ -1,5 +1,19 @@
 # ngme2 (development version)
 
+* Fix solver selection for one-dimensional Matérn models with free boundaries:
+  their non-symmetric operators no longer use the symmetric solver, avoiding
+  non-finite gradients in estimation and the cross-validation vignette.
+* Respect `control_opt(max_num_threads = )` when it is smaller than the number
+  of chains, and avoid R console output from optimizer worker threads.
+* Stop estimation with an error if any optimizer step is non-finite, instead
+  of silently returning unchanged parameters from a failed chain.
+* Replace the large fractional-model comparison in the automated tests with
+  small one- and two-dimensional fit-and-predict regression tests. The optional
+  INLA/inlabru comparison is retained in
+  `tests/demo/fractional-inlabru-comparison.R`.
+* Fix the random-intercept fixture in the factor-cache regression tests to
+  build its design matrix from each group's observations.
+
 * Adding an option to select the reordering method for the solvers on OSX. 
 * Fix the gradient of the fixed effects under non-Gaussian measurement noise. It
   weighted observations by `V / sigma^2` instead of `1 / (sigma^2 V)`, and

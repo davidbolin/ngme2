@@ -963,7 +963,9 @@ matern <- function(
     alpha = alpha,
     fix_alpha = fix_alpha,
     spatial_dim = d,
-    symmetric = TRUE,
+    # Free boundaries in a 1D mesh give a non-symmetric stiffness matrix.
+    # Its operator must use the non-symmetric solver for traces and sampling.
+    symmetric = Matrix::isSymmetric(C) && Matrix::isSymmetric(G),
     stationary = stationary,
     rational_order = rational_order,
     param_name = NULL,

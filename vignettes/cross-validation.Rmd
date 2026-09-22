@@ -335,6 +335,7 @@ fit_ou <- ngme(
   control_opt = control_opt(
     iterations = 2000,
     n_parallel_chain = 4,
+    max_num_threads = 2,
     std_lim = 0.01,
     seed = 123
   )
@@ -358,6 +359,7 @@ fit_matern <- ngme(
   control_opt = control_opt(
     iterations = 2000,
     n_parallel_chain = 4,
+    max_num_threads = 2,
     std_lim = 0.01,
     seed = 456
   )
@@ -380,6 +382,7 @@ cv_results <- cross_validation(
   test_idx = cv_indices$test,
   N_sim = 5, # Number of simulations for each fold
   n_gibbs_samples = 500, # Gibbs samples for CRPS computation
+  max_num_threads = 2,
   seed = 123
 )
 ```
@@ -697,6 +700,7 @@ fit_stationary <- ngme(
     iterations = 2000,
     optimizer = precond_sgd(),
     n_parallel_chain = 4,
+    max_num_threads = 2,
     std_lim = 0.01,
     seed = 111
   )
@@ -725,6 +729,7 @@ fit_nonstationary <- ngme(
     iterations = 2000,
     optimizer = precond_sgd(),
     n_parallel_chain = 4,
+    max_num_threads = 2,
     std_lim = 0.01,
     seed = 222
   )
@@ -909,6 +914,7 @@ cv_spatial_lpo <- cross_validation(
   percent = percent_test,
   times = n_reps,
   n_gibbs_samples = 500,
+  max_num_threads = 2,
   seed = 2025
 )
 ```

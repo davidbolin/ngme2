@@ -3,7 +3,9 @@
 
 #include "include/timer.h"
 #include "optimizer.h"
+#include "include/thread_io.h"
 #include <sstream>
+#include <stdexcept>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -119,12 +121,7 @@ Ngme_optimizer::Ngme_optimizer(const Rcpp::List &control_opt,
 }
 
 void Ngme_optimizer::log_verbose_message(const std::string &msg) const {
-#ifdef _OPENMP
-#pragma omp critical(ngme_verbose_print)
-  { Rcpp::Rcout << msg; }
-#else
-  Rcpp::Rcout << msg;
-#endif
+  ngme_io::out() << msg;
 }
 
 // x <- x - model->stepsize() * model->grad()
@@ -280,14 +277,14 @@ VectorXd Ngme_optimizer::sgd(double eps, int iterations,
       effective_stepsizes *= stepsize_decay_scale;
     }
 
-    // Test if one_step is NAN
-    if (std::isnan(one_step(one_step.size() - 1))) {
+    // A failed chain must not contribute unchanged iterates to convergence
+    // diagnostics. Throw a C++ exception here: estimate.cpp catches it inside
+    // the parallel region and signals the R error after the workers join.
+    if (!one_step.allFinite()) {
       std::ostringstream oss;
-      oss << "grad.norm() = " << grad.norm() << '\n';
-      oss << " H = " << H << '\n';
-      oss << "one_step ISNAN = " << one_step << '\n';
-      log_verbose_message(oss.str());
-      return x;
+      oss << "Non-finite optimizer step at iteration " << curr_iter + 1
+          << ". Check starting values and the optimizer step size.";
+      throw std::runtime_error(oss.str());
     }
 
     // ---- STEP LIMITING ------------------------------------------------------

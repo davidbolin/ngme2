@@ -291,9 +291,11 @@ test_that("caching does not change results for correlated noise or random effect
     b0 <- rnorm(ng, sd = 0.7)
     data.frame(y = 1 + 2 * x + b0[g] + rnorm(ng * ni, sd = 0.4), x = x, g = g)
   })
+  # Build the intercept design from each group's data. re(~1, data = re_d)
+  # ignores `data` and constructs a zero-row design before ngme sees it.
   expect_cache_invariant(ngme(
-    y ~ x + f(g, model = re(~1, data = re_d), noise = noise_normal()),
-    data = re_d, family = "normal",
+    y ~ x + f(~1, model = re(), noise = noise_normal()),
+    data = re_d, replicate = re_d$g, family = "normal",
     control_opt = ngme_reproducible_control()), "random effects")
 })
 

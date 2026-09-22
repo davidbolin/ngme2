@@ -706,7 +706,7 @@ control_opt <- function(
     stepsize_decay_precision_gamma = stepsize_decay_precision_gamma,
     continue_chains = continue_chains,
     num_threads = c(
-      max(n_parallel_chain, 1),
+      max(min(n_parallel_chain, max_num_threads), 1),
       max(floor(max_num_threads / n_parallel_chain), 1)
     ),
     rao_blackwellization = rao_blackwellization,

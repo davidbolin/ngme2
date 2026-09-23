@@ -1,4 +1,4 @@
-# ngme2 (development version)
+# ngme2 1.0.0 (2026-09-23)
 
 * Fix solver selection for one-dimensional Matérn models with free boundaries:
   their non-symmetric operators no longer use the symmetric solver, avoiding

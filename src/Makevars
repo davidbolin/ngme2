@@ -15,18 +15,17 @@ $(SHLIB): $(OBJECTS)
 
 # Compile Suitesparse
 ssdir = SuiteSparse
-sslib = $(sslib1) $(sslib2) $(sslib3) $(sslib4) $(sslib5) $(sslib6) $(sslib7)
+sslib = $(sslib1) $(sslib2) $(sslib3) $(sslib4) $(sslib5) $(sslib7)
 sslib1 = $(ssdir)/CHOLMOD/CHOLMOD.a
 sslib2 = $(ssdir)/CCOLAMD/CCOLAMD.a
 sslib3 = $(ssdir)/CAMD/CAMD.a
 sslib4 = $(ssdir)/COLAMD/COLAMD.a
 sslib5 = $(ssdir)/AMD/AMD.a
-sslib6 = $(ssdir)/CXSparse/CXSparse.a
 sslib7 = $(ssdir)/SuiteSparse_config/SuiteSparse_config.a
 
 ssenv = \
 	CC="$(CC)" \
-	CPPFLAGS="$(CPPFLAGS) -I\"$(R_INCLUDE_DIR)\" -DNDEBUG -DNPRINT -DNTIMER" \
+	CPPFLAGS="$(CPPFLAGS) -I\"$(R_INCLUDE_DIR)\" -DNDEBUG -DNPRINT -DNTIMER -DNPARTITION" \
 	CFLAGS="$(CFLAGS) $(CPICFLAGS) $(C_VISIBILITY)" \
 	AR="$(AR)" \
 	RANLIB="$(RANLIB)"
@@ -60,9 +59,6 @@ $(sslib4):
 	cd $(@D) && $(MAKE) clean all $(ssenv)
 
 $(sslib5):
-	cd $(@D) && $(MAKE) clean all $(ssenv)
-
-$(sslib6):
 	cd $(@D) && $(MAKE) clean all $(ssenv)
 
 $(sslib7):

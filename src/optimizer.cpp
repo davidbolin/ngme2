@@ -16,6 +16,9 @@ Ngme_optimizer::Ngme_optimizer(const Rcpp::List &control_opt,
                                unsigned long seed)
     : model(ngme), verbose(control_opt["verbose"]),
       numerical_eps(control_opt["numerical_eps"]), curr_iter(0),
+      method(Rcpp::as<std::string>(control_opt["sgd_method"])),
+      m(VectorXd::Zero(ngme->get_n_params())),
+      v(VectorXd::Zero(ngme->get_n_params())),
       schedule_min_scale(
           control_opt.containsElementNamed("schedule_min_scale")
               ? Rcpp::as<double>(control_opt["schedule_min_scale"])
@@ -29,9 +32,6 @@ Ngme_optimizer::Ngme_optimizer(const Rcpp::List &control_opt,
               ? Rcpp::as<double>(control_opt["step_clip_factor"])
               : 5.0),
 
-      method(Rcpp::as<std::string>(control_opt["sgd_method"])),
-      m(VectorXd::Zero(ngme->get_n_params())),
-      v(VectorXd::Zero(ngme->get_n_params())),
       preconditioner(
           MatrixXd::Identity(ngme->get_n_params(), ngme->get_n_params())),
       grad(VectorXd::Zero(ngme->get_n_params())), x(ngme->get_parameter()),

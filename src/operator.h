@@ -482,7 +482,7 @@ private:
 public:
   Spacetime(const Rcpp::List &);
 
-  void build_KZ(const VectorXd &);
+  void build_KZ(const VectorXd &) override;
   void update_dK(const VectorXd &);
   // Exact traces from the diagonal blocks alone. K is block lower-bidiagonal
   // once the stationary initial condition is in place, so this needs neither
@@ -528,7 +528,7 @@ private:
 public:
   Generic(const Rcpp::List &);
 
-  void build_KZ(const VectorXd &theta_K);
+  void build_KZ(const VectorXd &theta_K) override;
   double apply_transform(double value, const string &trans_type) const;
   // K is a linear combination of fixed matrices whose coefficients are
   // products of scalar transforms of theta, so every derivative is available

@@ -23,6 +23,8 @@ control_opt_batch_ci(
 
 \item{iterations}{optimization iterations.}
 
+\item{iters_per_check}{iterations between checkpoints (default 100).}
+
 \item{n_parallel_chain}{number of parallel chains.}
 
 \item{alpha}{polynomial stepsize exponent for \code{poly_decay(alpha, t0)}.}
@@ -34,8 +36,6 @@ iterations where polynomial schedule scaling is disabled.}
 
 \item{...}{additional arguments forwarded to \code{control_opt()} to override
 defaults.}
-
-\item{n_batch}{number of checkpoints.}
 }
 \value{
 object of class \code{control_opt}.

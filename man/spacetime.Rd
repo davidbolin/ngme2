@@ -56,6 +56,9 @@ spacetime(
 
 \item{stabilization}{TRUE if using a stabilization term (for implicit Euler).}
 
+\item{stationary_init}{use a stationary initial distribution for the first time
+slice (default TRUE).}
+
 \item{cc_variance_free}{Scale the operator with cc so that it affects the
 total variance less. Default TRUE.}
 }

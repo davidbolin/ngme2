@@ -49,6 +49,18 @@
 #' @param n_conv_batch number of consecutive checkpoints that must satisfy the criteria
 #'   before convergence is declared (default 2). Guards against a single lucky
 #'   checkpoint.
+#' @param schedule_auto_start arm the polynomial step-size schedule automatically
+#'   at the first checkpoint where the drift criterion passes. Defaults to FALSE.
+#' @param schedule_min_scale minimum multiplier allowed for the scheduled step size
+#'   (default 0.1).
+#' @param mc_se_conv_check use the Monte Carlo standard-error diagnostic as an
+#'   additional convergence condition during the search phase (default TRUE).
+#' @param max_stepsize_decays maximum number of precision-driven step-size reductions
+#'   (default 1).
+#' @param n_settle_checks number of checkpoints to wait after a step-size reduction
+#'   before assessing convergence again (default 3).
+#' @param stepsize_decay_precision_gamma factor by which to multiply the step size
+#'   at each precision-driven reduction (default 0.5).
 #' @param warn_no_convergence emit a warning when the iteration budget is exhausted without
 #'   the convergence criteria being met. Set \code{FALSE} for short runs where convergence
 #'   is not expected (e.g. fast unit tests).
@@ -804,7 +816,7 @@ control_opt <- function(
 #' @param optimizer optimizer object, default \code{sgd(stepsize = 0.03)}.
 #' @param burnin burn-in iterations before optimization.
 #' @param iterations optimization iterations.
-#' @param n_batch number of checkpoints.
+#' @param iters_per_check iterations between checkpoints (default 100).
 #' @param n_parallel_chain number of parallel chains.
 #' @param alpha polynomial stepsize exponent for \code{poly_decay(alpha, t0)}.
 #' @param t0 non-negative schedule offset.

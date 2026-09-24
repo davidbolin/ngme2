@@ -443,6 +443,12 @@ checkpoint.}
 the convergence criteria being met. Set \code{FALSE} for short runs where convergence
 is not expected (e.g. fast unit tests).}
 
+\item{schedule_auto_start}{arm the polynomial step-size schedule automatically
+at the first checkpoint where the drift criterion passes. Defaults to FALSE.}
+
+\item{schedule_min_scale}{minimum multiplier allowed for the scheduled step size
+(default 0.1).}
+
 \item{schedule_arm_z}{threshold for arming the optional step-size schedule
 (\code{stepsize_control}). It does not gate the stationarity criterion,
 which uses \code{stationarity_ratio_lim}.}
@@ -480,12 +486,24 @@ direction this errs in is premature release of a drifting parameter.}
 \item{conv_criterion}{which stopping rule the search phase uses:
 \code{"stationarity"} (default) or \code{"drift"}.}
 
+\item{mc_se_conv_check}{use the Monte Carlo standard-error diagnostic as an
+additional convergence condition during the search phase (default TRUE).}
+
 \item{mc_se_lim}{target for the polish, as a multiple of the statistical
 error: it runs until the Monte Carlo error of the reported average falls
 under \code{mc_se_lim * se_stat}. Total error is then about
 \code{sqrt(1 + mc_se_lim^2) * se_stat} and the cost goes as
 \code{1 / mc_se_lim^2}, so tightening it is quadratically expensive for a
 shrinking return. It touches only the polish phace, the search is unaffected.}
+
+\item{max_stepsize_decays}{maximum number of precision-driven step-size reductions
+(default 1).}
+
+\item{n_settle_checks}{number of checkpoints to wait after a step-size reduction
+before assessing convergence again (default 3).}
+
+\item{stepsize_decay_precision_gamma}{factor by which to multiply the step size
+at each precision-driven reduction (default 0.5).}
 
 \item{continue_chains}{make \code{ngme(start = previous_fit)} a true
   continuation (default \code{TRUE}). Three things follow from it:

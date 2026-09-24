@@ -366,6 +366,8 @@ bv_matern <- function(
 #' @param B_gamma_x_list A list of design matrices for the x component of the advection term on every time node, length(B_gamma_x_list) == nt-1.
 #' @param B_gamma_y_list A list of design matrices for the y component of the advection term on every time node, length(B_gamma_y_list) == nt-1.
 #' @param stabilization TRUE if using a stabilization term (for implicit Euler).
+#' @param stationary_init use a stationary initial distribution for the first time
+#'   slice (default TRUE).
 #'
 #' @return ngme_operator object.
 #' @export

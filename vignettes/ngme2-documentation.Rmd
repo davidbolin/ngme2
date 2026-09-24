@@ -1,0 +1,63 @@
+---
+title: "ngme2 Documentation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ngme2 Documentation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+The full documentation for **ngme2**, including worked examples and rendered
+output, is available on the package website:
+
+<https://davidbolin.github.io/ngme2/>
+
+## Getting Started
+
+- [Overview of ngme2](https://davidbolin.github.io/ngme2/articles/ngme2.html):
+  Introduction to the package and its main features
+- [Installation and configuration (OpenMP)](https://davidbolin.github.io/ngme2/articles/Installation.html):
+  How to install ngme2 and enable parallel computation
+
+## Latent Models
+
+- [AR(1) model](https://davidbolin.github.io/ngme2/articles/AR1-model.html):
+  Autoregressive order-1 models with non-Gaussian noise
+- [Random walk model](https://davidbolin.github.io/ngme2/articles/RW-model.html):
+  RW1 and RW2 models
+- [Ornstein-Uhlenbeck process](https://davidbolin.github.io/ngme2/articles/ou-process.html):
+  Continuous-time OU models
+- [SPDE Matérn model](https://davidbolin.github.io/ngme2/articles/SPDE-model.html):
+  Spatial models based on the SPDE approach
+- [Separable space-time (tensor product) model](https://davidbolin.github.io/ngme2/articles/tensor-product.html):
+  Space-time models via tensor products
+- [Non-separable space-time model (advection-diffusion)](https://davidbolin.github.io/ngme2/articles/non-separable-model.html):
+  Anisotropic and advective space-time models
+- [Matérn SPDE model on metric graph](https://davidbolin.github.io/ngme2/articles/matern-on-graph.html):
+  Spatial models on networks and metric graphs
+- [Bivariate type-G models](https://davidbolin.github.io/ngme2/articles/bivariate.html):
+  Joint models for two response variables
+- [Using the generic model](https://davidbolin.github.io/ngme2/articles/generic.html):
+  How to define custom latent models
+
+## Noise, Estimation, and Prediction
+
+- [Combined Gaussian and NIG noise models](https://davidbolin.github.io/ngme2/articles/normal-nig-noise.html):
+  Mixed noise specifications
+- [Model estimation and prediction](https://davidbolin.github.io/ngme2/articles/pred-and-est.html):
+  How estimation and prediction work in ngme2
+- [Models with replicates](https://davidbolin.github.io/ngme2/articles/replicate.html):
+  Handling replicated observations
+- [Cross-validation](https://davidbolin.github.io/ngme2/articles/cross-validation.html):
+  Time series and spatial cross-validation tools
+- [Prior templates](https://davidbolin.github.io/ngme2/articles/prior-templates.html):
+  Stationary and non-stationary prior specifications
+- [SGLD posterior-like sampling](https://davidbolin.github.io/ngme2/articles/sgld-sampling.html):
+  Uncertainty quantification via stochastic gradient Langevin dynamics

@@ -20,6 +20,9 @@
 ^Rplots\.pdf$
 ^\.Rhistory$
 
+# Website articles are built by pkgdown; CRAN carries the documentation index.
+^vignettes/(AR1-model|Installation|RW-model|SPDE-model|bivariate|cross-validation|generic|matern-on-graph|ngme2|non-separable-model|normal-nig-noise|ou-process|pred-and-est|prior-templates|replicate|sgld-sampling|tensor-product|var1-model)\.Rmd$
+
 # Placeholders that only exist to keep empty fixture directories in git.
 \.gitkeep$
 ^benchmarks$

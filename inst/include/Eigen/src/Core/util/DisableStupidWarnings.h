@@ -45,42 +45,14 @@
 #ifndef EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS
 #pragma clang diagnostic push
 #endif
-#if defined(__has_warning)
-// -Wconstant-logical-operand - warning: use of logical && with constant operand; switch to bitwise & or remove constant
-//     this is really a stupid warning as it warns on compile-time expressions involving enums
-#if __has_warning("-Wconstant-logical-operand")
-#pragma clang diagnostic ignored "-Wconstant-logical-operand"
-#endif
-#if __has_warning("-Wimplicit-int-float-conversion")
-#pragma clang diagnostic ignored "-Wimplicit-int-float-conversion"
-#endif
-#if (defined(__ALTIVEC__) || defined(__VSX__)) && (!defined(__STDC_VERSION__) || (__STDC_VERSION__ < 201112L))
-// warning: generic selections are a C11-specific feature
-// ignoring warnings thrown at vec_ctf in Altivec/PacketMath.h
-#if __has_warning("-Wc11-extensions")
-#pragma clang diagnostic ignored "-Wc11-extensions"
-#endif
-#endif
-#endif
+// Keep compiler diagnostics enabled in package sources for CRAN policy compliance.
 
 #elif defined __GNUC__ && !defined(__FUJITSU)
 
 #if (!defined(EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS)) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
 #pragma GCC diagnostic push
 #endif
-// g++ warns about local variables shadowing member functions, which is too strict
-#pragma GCC diagnostic ignored "-Wshadow"
-#if __GNUC__ == 4 && __GNUC_MINOR__ < 8
-// Until g++-4.7 there are warnings when comparing unsigned int vs 0, even in templated functions:
-#pragma GCC diagnostic ignored "-Wtype-limits"
-#endif
-#if __GNUC__ >= 6
-#pragma GCC diagnostic ignored "-Wignored-attributes"
-#endif
-#if __GNUC__ == 7
-// See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89325
-#pragma GCC diagnostic ignored "-Wattributes"
-#endif
+// Keep compiler diagnostics enabled in package sources for CRAN policy compliance.
 #endif
 
 #if defined __NVCC__

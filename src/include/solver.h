@@ -7,11 +7,11 @@
 
 #include "MatrixAlgebra.h"
 #include "probing.h"
+#include "thread_io.h"
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <cholmod.h>
 #include <atomic>
-#include <cstdio>
 #include <iostream>
 #include <memory>
 #include <utility>
@@ -81,10 +81,10 @@ inline int ngme_fork_safe_stype(int stype) {
   static thread_local bool warned = false;
   if (!warned) {
     warned = true;
-    std::fprintf(stderr,
-                 "ngme2: Apple Accelerate is not fork-safe; this forked worker "
-                 "is using CHOLMOD instead. Use a PSOCK cluster "
-                 "(parallel::makePSOCKcluster) to keep Accelerate.\n");
+    ngme_io::err()
+        << "ngme2: Apple Accelerate is not fork-safe; this forked worker "
+        << "is using CHOLMOD instead. Use a PSOCK cluster "
+        << "(parallel::makePSOCKcluster) to keep Accelerate.\n";
   }
   return (stype == 4) ? 2 : 3;
 }

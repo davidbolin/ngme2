@@ -7,11 +7,12 @@
 #include "../operator.h"
 #include "thread_io.h"
 #include <algorithm>
-#include <cstdio>
 #include <cstdlib>
 #include "MatrixAlgebra.h"
 #include <functional>
+#include <iomanip>
 #include <random>
+#include <sstream>
 #include <unsupported/Eigen/KroneckerProduct>
 
 // Below this the streamline-diffusion stabilization term is not formed at all;
@@ -1369,13 +1370,14 @@ bool Spacetime::compute_traces_structured(const VectorXd &theta,
                 std::abs(tv(j) - ref) / std::max(1.0, std::abs(ref));
             if (rel > worst) { worst = rel; worst_j = j; }
           }
-          // fprintf, not ngme_io::out(): that discards anything written off
-          // the main thread, which would hide exactly the calls most worth
-          // seeing. This is a debug path behind an env var, not normal output.
-          std::fprintf(stderr,
-                       "[spacetime trace check] call %d  max rel diff %.3e "
-                       "(theta_K[%d])\n",
-                       ++selinv_calls_, worst, worst_j);
+          // R console writes are only safe on the main thread. The helper
+          // discards diagnostics produced by parallel workers.
+          std::ostringstream msg;
+          msg << "[spacetime trace check] call " << ++selinv_calls_
+              << "  max rel diff " << std::scientific
+              << std::setprecision(3) << worst << " (theta_K[" << worst_j
+              << "])\n";
+          ngme_io::err() << msg.str();
         }
       }
       trace_vals = tv;
@@ -1389,10 +1391,10 @@ bool Spacetime::compute_traces_structured(const VectorXd &theta,
 
   if (!use_selinv) {
     if (std::getenv("NGME_SPACETIME_TRACE_CHECK"))
-      std::fprintf(stderr,
-                   "[spacetime trace check] FALLBACK to dense LU path "
-                   "(reason %d: 1=asymmetric block, 2=chol failed, "
-                   "3=derivative outside factor pattern)\n", selinv_fail_);
+      ngme_io::err()
+          << "[spacetime trace check] FALLBACK to dense LU path (reason "
+          << selinv_fail_ << ": 1=asymmetric block, 2=chol failed, "
+          << "3=derivative outside factor pattern)\n";
     // Fallback: the original dense-solve route. Reached for a non-symmetric
     // block (free advection), a block the Cholesky rejects, or a derivative
     // reaching outside the factor pattern.
@@ -1589,9 +1591,11 @@ bool Spacetime::compute_traces_structured(const VectorXd &theta,
             for (int t = 0; t < nt; ++t)
               ref += MatrixXd(hk_lu_[t]->solve(MatrixXd(dK_block(j, t)))).trace();
           }
-          std::fprintf(stderr,
-                       "[spacetime inv trace check] theta_K[%d] rel diff %.3e\n",
-                       j, std::abs(tr - ref) / std::max(1.0, std::abs(ref)));
+          std::ostringstream msg;
+          msg << "[spacetime inv trace check] theta_K[" << j
+              << "] rel diff " << std::scientific << std::setprecision(3)
+              << std::abs(tr - ref) / std::max(1.0, std::abs(ref)) << '\n';
+          ngme_io::err() << msg.str();
         }
         trace_vals(j) = tr;
         continue;
@@ -1736,9 +1740,11 @@ bool Spacetime::compute_traces_structured(const VectorXd &theta,
           if (rel > worst) { worst = rel; wj = j; wk = k; }
         }
       }
-      std::fprintf(stderr,
-                   "[spacetime HK check] max rel diff %.3e at (%d,%d)\n",
-                   worst, wj, wk);
+      std::ostringstream msg;
+      msg << "[spacetime HK check] max rel diff " << std::scientific
+          << std::setprecision(3) << worst << " at (" << wj << ',' << wk
+          << ")\n";
+      ngme_io::err() << msg.str();
     }
   }
 

@@ -1,12 +1,14 @@
 #ifndef NGME_ATA_CACHE_H
 #define NGME_ATA_CACHE_H
 
+#include "thread_io.h"
 #include <Eigen/Sparse>
 #include <Eigen/SparseCore>
 #include <algorithm>
-#include <vector>
-#include <cstdio>
 #include <cstdlib>
+#include <iomanip>
+#include <sstream>
+#include <vector>
 
 // Q = A^T diag(d) A for a sparse A whose SPARSITY PATTERN is fixed while its
 // values and d both move.
@@ -202,10 +204,14 @@ private:
       for (int t = col_begin(A, c); t < col_end(A, c); ++t)
         pat_inner_.push_back(A.innerIndexPtr()[t]);
     ready_ = true;
-    if (std::getenv("NGME2_ATA_DEBUG"))
-      std::fprintf(stderr, "[ata] built: A %ldx%ld nnz=%ld pairs=%zu (%.1f MB)\n",
-                   (long)A.rows(), (long)A.cols(), (long)A.nonZeros(), slot_.size(),
-                   slot_.size() * 4.0 / 1e6);
+    if (std::getenv("NGME2_ATA_DEBUG")) {
+      std::ostringstream msg;
+      msg << "[ata] built: A " << A.rows() << 'x' << A.cols()
+          << " nnz=" << A.nonZeros() << " pairs=" << slot_.size() << " ("
+          << std::fixed << std::setprecision(1)
+          << slot_.size() * 4.0 / 1e6 << " MB)\n";
+      ngme_io::err() << msg.str();
+    }
     return true;
   }
 };

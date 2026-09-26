@@ -1,11 +1,12 @@
 #include "operator.h"
 #include <sstream>
 #include "include/phase_timing.h"
-#include <cstdio>
+#include "include/thread_io.h"
 #include <cstdlib>
 #include "include/factor_counters.h"
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 
 // for initialize Latent models
 Operator::~Operator() = default;
@@ -415,10 +416,12 @@ void Operator::update_all(const VectorXd &theta, const UpdateOptions &opts) {
             const double r = relerr(d2K[j][k], ref);
             if (r > worst2) { worst2 = r; w2j = j; w2k = k; }
           }
-      std::fprintf(stderr,
-                   "[diff check] eps=%.3g  dK worst %.3e (theta_K[%d])  "
-                   "d2K worst %.3e (%d,%d)\n",
-                   e, worst1, w1, worst2, w2j, w2k);
+      std::ostringstream msg;
+      msg << "[diff check] eps=" << std::setprecision(3) << e
+          << "  dK worst " << std::scientific << std::setprecision(3)
+          << worst1 << " (theta_K[" << w1 << "])  d2K worst " << worst2
+          << " (" << w2j << ',' << w2k << ")\n";
+      ngme_io::err() << msg.str();
     }
     K = K_save;
     Z = Z_save;

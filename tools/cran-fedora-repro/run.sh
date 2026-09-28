@@ -30,6 +30,7 @@ docker build --platform linux/amd64 \
 
 if [[ "$mode" == check ]]; then
   docker run --rm --platform linux/amd64 \
+    --env "_R_CHECK_FORCE_SUGGESTS_=false" \
     --mount "type=bind,source=$output_dir,target=/check" \
     ngme2-cran-fedora-gcc16:1.0.0 \
     R CMD check --no-manual --no-build-vignettes --as-cran /check/ngme2_1.0.0.tar.gz

@@ -2,9 +2,9 @@ FROM ghcr.io/r-hub/containers/gcc16@sha256:6aa66e5f02f9cbca5eba368c532b612dcdbbd
 
 COPY ngme2_1.0.0.tar.gz /tmp/ngme2_1.0.0.tar.gz
 
-# Match a source-package check: install declared dependencies, then compile
-# the exact tarball that was submitted to CRAN.
-RUN Rscript -e 'pak::pkg_install("deps::/tmp/ngme2_1.0.0.tar.gz", dependencies = TRUE)'
+# Install hard dependencies and testthat. INLA is an optional Suggests package
+# that pak cannot resolve from the default CRAN repository in this image.
+RUN Rscript -e 'pak::pkg_install(c("deps::/tmp/ngme2_1.0.0.tar.gz", "testthat"), dependencies = NA)'
 RUN R CMD INSTALL /tmp/ngme2_1.0.0.tar.gz
 RUN mkdir -p /opt/ngme2-source && tar -xzf /tmp/ngme2_1.0.0.tar.gz -C /opt/ngme2-source
 

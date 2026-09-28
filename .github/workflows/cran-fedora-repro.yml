@@ -31,7 +31,7 @@ jobs:
             https://cran.r-project.org/src/contrib/ngme2_1.0.0.tar.gz \
             --output "$RUNNER_TEMP/ngme2_1.0.0.tar.gz"
           tar -xOf "$RUNNER_TEMP/ngme2_1.0.0.tar.gz" ngme2/DESCRIPTION \
-            | rg '^Version: 1\.0\.0$'
+            | grep -E '^Version: 1\.0\.0$'
 
       - name: Profile tests on native x86_64 Fedora container
         shell: bash

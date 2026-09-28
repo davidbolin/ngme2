@@ -1,0 +1,55 @@
+name: CRAN Fedora test profiler
+
+on:
+  push:
+    branches: [devel]
+    paths:
+      - .github/workflows/cran-fedora-repro.yml
+      - tools/cran-fedora-repro/**
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Run per-file profiling or the full CRAN-style check
+        type: choice
+        options: [profile, check]
+        default: profile
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download published CRAN source package
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 --silent --show-error \
+            https://cran.r-project.org/src/contrib/ngme2_1.0.0.tar.gz \
+            --output "$RUNNER_TEMP/ngme2_1.0.0.tar.gz"
+          tar -xOf "$RUNNER_TEMP/ngme2_1.0.0.tar.gz" ngme2/DESCRIPTION \
+            | rg '^Version: 1\.0\.0$'
+
+      - name: Profile tests on native x86_64 Fedora container
+        shell: bash
+        env:
+          RUN_MODE: ${{ github.event.inputs.mode || 'profile' }}
+          NGME_TEST_TIMEOUT_SECS: '180'
+        run: |
+          test "$(uname -m)" = x86_64
+          ./tools/cran-fedora-repro/run.sh \
+            "$RUNNER_TEMP/ngme2_1.0.0.tar.gz" \
+            "$RUNNER_TEMP/ngme2-fedora" \
+            "$RUN_MODE"
+
+      - name: Upload diagnostic logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ngme2-fedora-${{ github.event.inputs.mode || 'profile' }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/ngme2-fedora/
+          if-no-files-found: warn
+          retention-days: 7

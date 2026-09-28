@@ -1,7 +1,7 @@
 # Reproduce the CRAN Fedora GCC tests
 
 This uses R-hub's pinned Fedora 44 x86_64 image with R-devel r90590 and GCC
-16.2.1. It installs hard dependencies, `testthat`, and the
+16.2.1. It installs hard dependencies, `testthat`, `rSPDE`, and the
 `ngme2_1.0.0.tar.gz` source package. Other optional `Suggests` packages,
 including INLA, are not installed and tests requiring them may skip.
 By default it runs `R CMD check --as-cran` (without manual or vignette builds)

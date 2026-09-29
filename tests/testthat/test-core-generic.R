@@ -42,6 +42,7 @@ test_that("generic model == AR1 model", {
   expect_equal(generic_ar1$matrices, list(ar1$C, ar1$G, ar1$E11))
 
   control <- control_opt(
+    max_num_threads = 2,
     warn_no_convergence = FALSE,
     seed = seed,
     iterations = 100,
@@ -111,6 +112,7 @@ test_that("generic model == Matern model (alpha == 2)", {
 
   # Fitting the matern model
   control <- control_opt(
+    max_num_threads = 2,
     warn_no_convergence = FALSE,
     seed = 10,
     iterations = 10,
@@ -187,6 +189,7 @@ test_that("generic model == Matern model (alpha == 4)", {
 
   # Fitting the matern model
   control <- control_opt(
+    max_num_threads = 2,
     warn_no_convergence = FALSE,
     seed = 10,
     iterations = 100,
@@ -257,6 +260,7 @@ test_that("generic model == Matern model", {
   expect_equal(generic_matern$matrices, list(matern$C, matern$G))
 
   control <- control_opt(
+    max_num_threads = 2,
     warn_no_convergence = FALSE,
     seed = seed,
     iterations = 100,
@@ -315,6 +319,7 @@ test_that("generic model == RW1 model", {
   # expect_equal(generic_rw1$matrices, list(rw1$K))
 
   control <- control_opt(
+    max_num_threads = 2,
     warn_no_convergence = FALSE,
     seed = seed,
     iterations = 100,

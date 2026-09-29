@@ -57,6 +57,7 @@ fit_ar1 <- function(fx, ...) {
     y ~ 1 + x + f(t, model = ar1(), noise = noise_normal(), name = "field"),
     data = fx$dat, family = "normal",
     control_opt = control_opt(
+      max_num_threads = 2,
       iterations = 600, n_parallel_chain = 4, seed = 16,
       optimizer = precond_sgd(), ...
     )

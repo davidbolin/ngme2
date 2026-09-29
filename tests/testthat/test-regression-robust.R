@@ -11,6 +11,7 @@ test_that("control_opt robust parameter works", {
 
   # Fit model with robust = TRUE
   control <- control_opt(
+    max_num_threads = 2,
     warn_no_convergence = FALSE,
     iterations = 10,
     robust = TRUE,

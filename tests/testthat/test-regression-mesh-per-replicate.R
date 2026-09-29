@@ -55,7 +55,8 @@ test_that("per-replicate 1D mesh list gives each replicate its own operator", {
     replicate = dm$rep,
     family = "normal",
     control_opt = control_opt(
-    warn_no_convergence = FALSE,
+      max_num_threads = 2,
+      warn_no_convergence = FALSE,
       seed = 1, burnin = 5, iterations = 10, n_batch = 1
     )
   )
@@ -97,7 +98,8 @@ test_that("per-replicate 2D mesh list gives each replicate its own operator", {
     replicate = dm$rep,
     family = "normal",
     control_opt = control_opt(
-    warn_no_convergence = FALSE,
+      max_num_threads = 2,
+      warn_no_convergence = FALSE,
       seed = 1, burnin = 5, iterations = 10, n_batch = 1
     )
   )

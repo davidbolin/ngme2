@@ -250,6 +250,7 @@ test_that("generic_ns model == AR1 model", {
   expect_equal(generic_ar1$matrices, list(ar1$C, G1))
 
   control <- control_opt(
+    max_num_threads = 2,
     warn_no_convergence = FALSE,
     seed = seed,
     iterations = 100,
@@ -354,6 +355,7 @@ test_that("generic model == Matern model (alpha == 2 or 4)", {
 
   # Fitting the matern model
   control <- control_opt(
+    max_num_threads = 2,
     warn_no_convergence = FALSE,
     seed = 10,
     iterations = 50,
@@ -523,7 +525,8 @@ test_that("generic_ns model == bv_matern_nig model", {
     ),
     data = data.frame(Y, long, lat),
     control_opt = control_opt(
-    warn_no_convergence = FALSE,
+      max_num_threads = 2,
+      warn_no_convergence = FALSE,
       iterations = 10,
       n_parallel_chain = 4,
       rao_blackwellization = TRUE,
@@ -575,7 +578,8 @@ test_that("Simulation and fitting", {
     ),
     data = data.frame(y),
     control_opt = control_opt(
-    warn_no_convergence = FALSE,
+      max_num_threads = 2,
+      warn_no_convergence = FALSE,
       iterations = 10
     )
   )

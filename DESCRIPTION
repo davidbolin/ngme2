@@ -53,8 +53,9 @@ Imports:
     gridExtra,
     withr
 LinkingTo:
+    Matrix,
     Rcpp,
-    RcppEigen,
+    RcppEigen
 Suggests:
     knitr,
     rmarkdown,

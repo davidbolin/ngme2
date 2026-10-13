@@ -10,9 +10,20 @@ on:
         type: choice
         options: [check, profile]
         default: check
+      compiler:
+        description: Select both compilers or rerun only one
+        type: choice
+        options: [both, gcc, clang]
+        default: both
+      source_run_id:
+        description: Reuse a source artifact from this run ID (empty builds current source)
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   source:
@@ -21,16 +32,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: r-lib/actions/setup-r@v2
+        if: ${{ !github.event.inputs.source_run_id }}
         with:
           r-version: release
       - uses: r-lib/actions/setup-r-dependencies@v2
+        if: ${{ !github.event.inputs.source_run_id }}
         with:
           dependencies: 'NA'
           extra-packages: |
             any::knitr
             any::rmarkdown
       - name: Build the checked-out source with its documentation vignette
+        if: ${{ !github.event.inputs.source_run_id }}
         run: R CMD build .
+      - name: Reuse the exact source tarball from a previous run
+        if: ${{ github.event.inputs.source_run_id }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ngme2-source-${{ github.event.inputs.source_run_id }}
+          run-id: ${{ github.event.inputs.source_run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify source package identity
+        shell: bash
+        run: |
+          version=$(sed -n 's/^Version: //p' DESCRIPTION)
+          tar -xOf "ngme2_${version}.tar.gz" ngme2/DESCRIPTION \
+            | grep -Fx "Version: $version"
       - uses: actions/upload-artifact@v4
         with:
           name: ngme2-source-${{ github.run_id }}
@@ -45,7 +72,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        compiler: [gcc, clang]
+        compiler: ${{ fromJSON(github.event.inputs.compiler == 'clang' && '["clang"]' || github.event.inputs.compiler == 'gcc' && '["gcc"]' || '["gcc","clang"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4

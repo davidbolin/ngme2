@@ -27,6 +27,11 @@ tarball and SHA-256, environment details, dependency/build logs, `00install.out`
 `00check.log`, and complete `testthat.Rout` output. Failed checks and one-hour
 check timeouts fail the workflow and still upload the available logs.
 
+For a toolchain-only retry, select one `compiler` and provide the previous
+`source_run_id` in the manual workflow inputs. This reuses the same tarball
+without recompiling the package to build its vignette. Leave the run ID empty
+when package source files have changed.
+
 For individual test-file timings, use `profile` instead of `check`. Each file
 runs in a separate R session in CRAN mode, with a ten-minute timeout (exit
 status 124). Results are written to `test-profiles/summary.tsv` and one log per

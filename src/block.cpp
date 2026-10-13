@@ -2415,7 +2415,7 @@ void BlockModel::compute_rb_trace() {
       // selinv_state_ is already decided here by the theta_K loop above.)
       if (selinv_state_ != 1)
         for (int j = 0; j < latents[i]->get_n_theta_K(); ++j)
-          rng();
+          (void)rng();
     }
 
     // Compute and accumulate per-parameter Z traces

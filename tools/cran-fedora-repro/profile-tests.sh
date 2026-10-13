@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -u
+set -uo pipefail
 
 test_dir="${NGME_TEST_SOURCE:-/opt/ngme2-source/ngme2}/tests/testthat"
 log_dir="${NGME_TEST_LOG_DIR:-/check/test-profiles}"

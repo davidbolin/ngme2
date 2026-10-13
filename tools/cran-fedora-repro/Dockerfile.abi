@@ -1,0 +1,9 @@
+FROM ghcr.io/r-hub/containers/gcc16@sha256:6238b814ab2be4feafbbb43e2e141ee8ecf647999753a9429ba90ef7a3a43264
+RUN dnf install -y clang libcxx-devel libcxxabi-devel libomp-devel
+# Deliberately build Rcpp with GCC to reproduce an inconsistent C++ ABI.
+RUN Rscript -e 'install.packages("Rcpp", repos = "https://cloud.r-project.org", type = "source")'
+COPY Makevars.clang /opt/ngme2/Makevars.libcxx
+RUN sed 's/-stdlib=libc++/-stdlib=libstdc++/g' \
+    /opt/ngme2/Makevars.libcxx > /opt/ngme2/Makevars.libstdcxx
+COPY check-toolchain.R rng-discard-probe.cpp /opt/ngme2/
+ENV R_MAKEVARS_USER=/opt/ngme2/Makevars.libcxx

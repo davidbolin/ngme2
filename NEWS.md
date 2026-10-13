@@ -1,3 +1,13 @@
+# ngme2 1.0.1
+
+* Limit parallel fits in automated tests to two threads without reducing the
+  number of estimation chains.
+* Explicitly discard unused random-number draws when advancing the generator;
+  this removes the Clang/libc++ warning while preserving the random stream.
+* Update CHOLMOD integration for Eigen 5.0.1 and declare Matrix in LinkingTo.
+* Check the current source package on Fedora with both GCC and Clang, including
+  all CRAN-hosted suggested packages and full test progress in the check logs.
+
 # ngme2 1.0.0 (2026-09-23)
 
 * Fix solver selection for one-dimensional Matérn models with free boundaries:

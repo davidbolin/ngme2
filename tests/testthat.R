@@ -8,4 +8,4 @@
 
 library(testthat)
 
-test_check("ngme2")
+test_check("ngme2", reporter = "summary")

@@ -1,55 +1,114 @@
-name: CRAN Fedora test profiler
+name: CRAN Fedora checks
 
 on:
   push:
     branches: [devel]
-    paths:
-      - .github/workflows/cran-fedora-repro.yml
-      - tools/cran-fedora-repro/**
   workflow_dispatch:
     inputs:
       mode:
-        description: Run per-file profiling or the full CRAN-style check
+        description: Run the full check, per-file profiling or C++ toolchain probes
         type: choice
-        options: [profile, check]
-        default: profile
+        options: [check, profile, toolchain-probe]
+        default: check
+      compiler:
+        description: Select both compilers or rerun only one
+        type: choice
+        options: [both, gcc, clang]
+        default: both
+      source_run_id:
+        description: Reuse a source artifact from this run ID (empty builds current source)
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
-  reproduce:
+  source:
+    if: ${{ github.event.inputs.mode != 'toolchain-probe' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 240
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download published CRAN source package
+      - uses: r-lib/actions/setup-r@v2
+        if: ${{ !github.event.inputs.source_run_id }}
+        with:
+          r-version: release
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        if: ${{ !github.event.inputs.source_run_id }}
+        with:
+          dependencies: 'NA'
+          extra-packages: |
+            any::knitr
+            any::rmarkdown
+      - name: Build the checked-out source with its documentation vignette
+        if: ${{ !github.event.inputs.source_run_id }}
+        run: R CMD build .
+      - name: Reuse the exact source tarball from a previous run
+        if: ${{ github.event.inputs.source_run_id }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ngme2-source-${{ github.event.inputs.source_run_id }}
+          run-id: ${{ github.event.inputs.source_run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify source package identity
         shell: bash
         run: |
-          curl --fail --location --retry 3 --silent --show-error \
-            https://cran.r-project.org/src/contrib/ngme2_1.0.0.tar.gz \
-            --output "$RUNNER_TEMP/ngme2_1.0.0.tar.gz"
-          tar -xOf "$RUNNER_TEMP/ngme2_1.0.0.tar.gz" ngme2/DESCRIPTION \
-            | grep -E '^Version: 1\.0\.0$'
+          version=$(sed -n 's/^Version: //p' DESCRIPTION)
+          tar -xOf "ngme2_${version}.tar.gz" ngme2/DESCRIPTION \
+            | grep -Fx "Version: $version"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ngme2-source-${{ github.run_id }}
+          path: ngme2_*.tar.gz
+          if-no-files-found: error
+          retention-days: 30
 
-      - name: Profile tests on native x86_64 Fedora container
+  toolchain-probe:
+    if: ${{ github.event.inputs.mode == 'toolchain-probe' }}
+    uses: ./.github/workflows/cran-fedora-toolchain-probe.yml
+
+  reproduce:
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: ${{ fromJSON(github.event.inputs.compiler == 'clang' && '["clang"]' || github.event.inputs.compiler == 'gcc' && '["gcc"]' || '["gcc","clang"]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ngme2-source-${{ github.run_id }}
+          path: ${{ runner.temp }}/ngme2-source
+      - name: Check the current source on native x86_64 Fedora
         shell: bash
         env:
-          RUN_MODE: ${{ github.event.inputs.mode || 'profile' }}
-          NGME_TEST_TIMEOUT_SECS: '180'
+          RUN_MODE: ${{ github.event.inputs.mode || 'check' }}
+          NGME_CHECK_TIMEOUT_SECS: '3600'
+          NGME_TEST_TIMEOUT_SECS: '600'
         run: |
           test "$(uname -m)" = x86_64
+          tarballs=("$RUNNER_TEMP"/ngme2-source/ngme2_*.tar.gz)
+          test "${#tarballs[@]}" -eq 1
           ./tools/cran-fedora-repro/run.sh \
-            "$RUNNER_TEMP/ngme2_1.0.0.tar.gz" \
-            "$RUNNER_TEMP/ngme2-fedora" \
-            "$RUN_MODE"
-
-      - name: Upload diagnostic logs
+            "${tarballs[0]}" \
+            "$RUNNER_TEMP/ngme2-fedora-${{ matrix.compiler }}" \
+            "$RUN_MODE" \
+            "${{ matrix.compiler }}"
+      - name: Upload the source, compiler details and complete check logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ngme2-fedora-${{ github.event.inputs.mode || 'profile' }}-${{ github.run_id }}
-          path: ${{ runner.temp }}/ngme2-fedora/
+          name: ngme2-fedora-${{ matrix.compiler }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ngme2-fedora-${{ matrix.compiler }}/
+            !${{ runner.temp }}/ngme2-fedora-${{ matrix.compiler }}/ngme2.Rcheck/ngme2/**
+            !${{ runner.temp }}/ngme2-fedora-${{ matrix.compiler }}/ngme2.Rcheck/00_pkg_src/**
+            !${{ runner.temp }}/ngme2-fedora-${{ matrix.compiler }}/ngme2.Rcheck/R_check_bin/**
+            !${{ runner.temp }}/ngme2-fedora-${{ matrix.compiler }}/ngme2-source.tar.gz
           if-no-files-found: warn
-          retention-days: 7
+          retention-days: 30

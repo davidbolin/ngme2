@@ -1,0 +1,27 @@
+CC = clang
+CC17 = clang -std=gnu17
+CC23 = clang -std=gnu2x
+CC90 = clang -std=gnu90
+CC99 = clang -std=gnu99
+
+CFLAGS = -O3 -Wall -pedantic -Wp,-D_FORTIFY_SOURCE=3
+C17FLAGS = $(CFLAGS)
+C23FLAGS = $(CFLAGS)
+C90FLAGS = $(CFLAGS)
+C99FLAGS = $(CFLAGS)
+
+CXX = clang++ -stdlib=libc++
+CXX11 = clang++ -stdlib=libc++
+CXX14 = clang++ -stdlib=libc++
+CXX17 = clang++ -stdlib=libc++
+CXX20 = clang++ -stdlib=libc++
+CXX23 = clang++ -stdlib=libc++
+CXXFLAGS = -O3 -Wall -pedantic -frtti -Wp,-D_FORTIFY_SOURCE=3
+CXX11FLAGS = $(CXXFLAGS)
+CXX14FLAGS = $(CXXFLAGS)
+CXX17FLAGS = $(CXXFLAGS)
+CXX20FLAGS = $(CXXFLAGS)
+CXX23FLAGS = $(CXXFLAGS)
+
+SHLIB_OPENMP_CFLAGS = -fopenmp
+SHLIB_OPENMP_CXXFLAGS = -fopenmp

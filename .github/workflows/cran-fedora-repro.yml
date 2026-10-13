@@ -1,0 +1,77 @@
+name: CRAN Fedora checks
+
+on:
+  push:
+    branches: [cran]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Run the full CRAN-style check or per-file test profiling
+        type: choice
+        options: [check, profile]
+        default: check
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: 'NA'
+          extra-packages: |
+            any::knitr
+            any::rmarkdown
+      - name: Build the checked-out source with its documentation vignette
+        run: R CMD build .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ngme2-source-${{ github.run_id }}
+          path: ngme2_*.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+  reproduce:
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ngme2-source-${{ github.run_id }}
+          path: ${{ runner.temp }}/ngme2-source
+      - name: Check the current source on native x86_64 Fedora
+        shell: bash
+        env:
+          RUN_MODE: ${{ github.event.inputs.mode || 'check' }}
+          NGME_CHECK_TIMEOUT_SECS: '3600'
+          NGME_TEST_TIMEOUT_SECS: '600'
+        run: |
+          test "$(uname -m)" = x86_64
+          tarballs=("$RUNNER_TEMP"/ngme2-source/ngme2_*.tar.gz)
+          test "${#tarballs[@]}" -eq 1
+          ./tools/cran-fedora-repro/run.sh \
+            "${tarballs[0]}" \
+            "$RUNNER_TEMP/ngme2-fedora-${{ matrix.compiler }}" \
+            "$RUN_MODE" \
+            "${{ matrix.compiler }}"
+      - name: Upload the source, compiler details and complete check logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ngme2-fedora-${{ matrix.compiler }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/ngme2-fedora-${{ matrix.compiler }}/
+          if-no-files-found: warn
+          retention-days: 30

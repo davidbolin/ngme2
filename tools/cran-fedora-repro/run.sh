@@ -32,7 +32,8 @@ if [[ "$tarball" != "$output_dir/$tarball_name" ]]; then
   cp "$tarball" "$output_dir/$tarball_name"
 fi
 cp "$script_dir/Dockerfile" "$script_dir/Makevars.clang" \
-  "$script_dir/install-deps.R" "$script_dir/profile-tests.sh" "$output_dir/"
+  "$script_dir/install-deps.R" "$script_dir/profile-tests.sh" \
+  "$script_dir/build-gdal-clang.sh" "$script_dir/check-toolchain.R" "$output_dir/"
 
 image="ngme2-cran-fedora-$compiler:$version"
 printf 'Output directory: %s\nCompiler: %s\n' "$output_dir" "$compiler"
@@ -41,7 +42,7 @@ docker build --platform linux/amd64 --progress plain \
   "$output_dir" 2>&1 | tee "$output_dir/docker-build.log"
 
 docker run --rm --init --platform linux/amd64 "$image" \
-  sh -c 'cat /etc/os-release; R --version; R CMD config CC; R CMD config CXX; R CMD config CXXFLAGS; Rscript -e "sessionInfo()"; rpm -q gcc clang libcxx libomp; true' \
+  sh -c 'cat /etc/os-release; R --version; R CMD config CC; R CMD config CXX; R CMD config CXXFLAGS; Rscript -e "sessionInfo()"; rpm -q gcc clang libcxx libomp; gdal-config --version; gdal-config --prefix; true' \
   > "$output_dir/environment.txt" 2>&1
 shasum -a 256 "$output_dir/$tarball_name" > "$output_dir/source-sha256.txt"
 

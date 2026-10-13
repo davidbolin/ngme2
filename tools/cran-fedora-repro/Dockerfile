@@ -5,20 +5,28 @@ FROM ${R_IMAGE}
 ARG NGME_COMPILER=gcc
 
 COPY Makevars.clang /opt/ngme2/Makevars.clang
+COPY build-gdal-clang.sh /opt/ngme2/build-gdal-clang.sh
 RUN if [ "$NGME_COMPILER" = clang ]; then \
-      dnf install -y clang libcxx-devel libcxxabi-devel libomp-devel; \
+      dnf install -y clang libcxx-devel libcxxabi-devel libomp-devel \
+        cmake ninja-build proj-devel geos-devel sqlite-devel expat-devel \
+        libtiff-devel libjpeg-turbo-devel libpng-devel zlib-devel && \
+      bash /opt/ngme2/build-gdal-clang.sh && \
+      cp /opt/ngme2/Makevars.clang /root/.R/Makevars; \
     elif [ "$NGME_COMPILER" != gcc ]; then \
       exit 2; \
     fi
 
+ENV PATH=/opt/gdal-clang/bin:${PATH}
+ENV LD_LIBRARY_PATH=/opt/gdal-clang/lib
+ENV PKG_CONFIG_PATH=/opt/gdal-clang/lib/pkgconfig
+
 COPY ngme2-source.tar.gz /tmp/ngme2-source.tar.gz
 COPY install-deps.R /opt/ngme2/install-deps.R
-# Fedora's GDAL exposes a libstdc++ C++ interface. Build dependencies such as
-# sf with the default GCC toolchain, then switch only ngme2 to Clang/libc++.
+# All R dependencies use the selected compiler and standard library. In the
+# Clang image, sf also uses the matching GDAL installed above.
 RUN Rscript /opt/ngme2/install-deps.R /tmp/ngme2-source.tar.gz
-RUN if [ "$NGME_COMPILER" = clang ]; then \
-      cp /opt/ngme2/Makevars.clang /root/.R/Makevars; \
-    fi
+COPY check-toolchain.R /opt/ngme2/check-toolchain.R
+RUN Rscript /opt/ngme2/check-toolchain.R
 RUN mkdir -p /opt/ngme2-source && \
     tar -xzf /tmp/ngme2-source.tar.gz -C /opt/ngme2-source
 

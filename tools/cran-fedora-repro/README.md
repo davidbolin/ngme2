@@ -10,12 +10,13 @@ R CMD build .
 
 Both checks use the same pinned Fedora 44 / R-devel R-hub GCC 16 image.
 The Clang configuration installs Fedora's Clang, libc++ and libomp, and uses
-them to compile ngme2. Dependencies are compiled from CRAN source with the
-base image's GCC toolchain: Fedora's GDAL uses libstdc++, and compiling sf
-with libc++ would leave incompatible GDAL symbols. R itself also remains
-GCC-built. This is not an exact copy of CRAN's Clang machine; it checks ngme2
-with Clang/libc++ but not an entirely Clang-built dependency stack. The R-hub
-`clang*` images are Ubuntu images and are not used here.
+them for ngme2 and its R dependencies. It builds a pinned GDAL 3.12.4 with
+Clang/libc++ so that sf uses a compatible C++ interface; optional GDAL drivers
+are disabled in this check environment. Mixing GCC-built Rcpp with a
+Clang/libc++ package can crash when a C++ exception is converted to an R error,
+so both images run a small Rcpp exception preflight. R itself remains GCC-built;
+this is not an exact copy of CRAN's Clang machine. The R-hub `clang*` images are
+Ubuntu images and are not used here.
 
 All CRAN-hosted Imports, LinkingTo and Suggests are installed. INLA is omitted
 because it comes from a separate repository; its absence can produce a NOTE.
@@ -29,6 +30,9 @@ It runs on pushes to `cran` or by manual dispatch. Artifacts include the source
 tarball and SHA-256, environment details, dependency/build logs, `00install.out`,
 `00check.log`, and complete `testthat.Rout` output. Failed checks and one-hour
 check timeouts fail the workflow and still upload the available logs.
+Temporary installed-package and unpacked-source directories are excluded from
+artifacts. This avoids case-sensitive HTML help filenames colliding when the
+logs are downloaded on a case-insensitive macOS filesystem.
 
 For a toolchain-only retry, select one `compiler` and provide the previous
 `source_run_id` in the manual workflow inputs. This reuses the same tarball
@@ -42,3 +46,12 @@ file. Override `NGME_TEST_TIMEOUT_SECS` or `NGME_CHECK_TIMEOUT_SECS` as needed.
 
 Running x86_64 containers on Apple Silicon uses emulation, so local elapsed
 times cannot be compared directly with CRAN's timings.
+
+Select `toolchain-probe` in the manual workflow inputs to check two regressions
+without compiling ngme2: GCC-built Rcpp with Clang/libc++ must fail the exception
+probe, while Clang/libstdc++ must succeed. The RNG probe records whether the
+native libc++ diagnoses an ignored result, then requires explicit discard to
+compile under `-Werror=unused-result` and preserve the generator state. libc++
+22 does not annotate this operator as nodiscard; the original CRAN warning
+depends on its library version. The deliberately inconsistent ABI case does
+not indicate a failure in ngme2.

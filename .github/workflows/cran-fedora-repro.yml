@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Run the full CRAN-style check or per-file test profiling
+        description: Run the full check, per-file profiling or C++ toolchain probes
         type: choice
-        options: [check, profile]
+        options: [check, profile, toolchain-probe]
         default: check
       compiler:
         description: Select both compilers or rerun only one
@@ -27,6 +27,7 @@ permissions:
 
 jobs:
   source:
+    if: ${{ github.event.inputs.mode != 'toolchain-probe' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -65,6 +66,10 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  toolchain-probe:
+    if: ${{ github.event.inputs.mode == 'toolchain-probe' }}
+    uses: ./.github/workflows/cran-fedora-toolchain-probe.yml
+
   reproduce:
     needs: source
     runs-on: ubuntu-24.04
@@ -99,6 +104,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ngme2-fedora-${{ matrix.compiler }}-${{ github.run_id }}
-          path: ${{ runner.temp }}/ngme2-fedora-${{ matrix.compiler }}/
+          path: |
+            ${{ runner.temp }}/ngme2-fedora-${{ matrix.compiler }}/
+            !${{ runner.temp }}/ngme2-fedora-${{ matrix.compiler }}/ngme2.Rcheck/ngme2/**
+            !${{ runner.temp }}/ngme2-fedora-${{ matrix.compiler }}/ngme2.Rcheck/00_pkg_src/**
+            !${{ runner.temp }}/ngme2-fedora-${{ matrix.compiler }}/ngme2.Rcheck/R_check_bin/**
+            !${{ runner.temp }}/ngme2-fedora-${{ matrix.compiler }}/ngme2-source.tar.gz
           if-no-files-found: warn
           retention-days: 30

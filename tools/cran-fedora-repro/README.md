@@ -9,10 +9,13 @@ R CMD build .
 ```
 
 Both checks use the same pinned Fedora 44 / R-devel R-hub GCC 16 image.
-The Clang configuration installs Fedora's Clang, libc++ and libomp and
-compiles package dependencies with that toolchain. R itself remains the
-GCC-built R from the base image; this is not an exact copy of CRAN's Clang
-machine. The R-hub `clang*` images are Ubuntu images and are not used here.
+The Clang configuration installs Fedora's Clang, libc++ and libomp, and uses
+them to compile ngme2. Dependencies are compiled from CRAN source with the
+base image's GCC toolchain: Fedora's GDAL uses libstdc++, and compiling sf
+with libc++ would leave incompatible GDAL symbols. R itself also remains
+GCC-built. This is not an exact copy of CRAN's Clang machine; it checks ngme2
+with Clang/libc++ but not an entirely Clang-built dependency stack. The R-hub
+`clang*` images are Ubuntu images and are not used here.
 
 All CRAN-hosted Imports, LinkingTo and Suggests are installed. INLA is omitted
 because it comes from a separate repository; its absence can produce a NOTE.

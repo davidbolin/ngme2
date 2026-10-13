@@ -14,8 +14,8 @@ packages <- setdiff(packages, c("R", "INLA", ""))
 options(repos = c(CRAN = "https://cloud.r-project.org"), timeout = 600)
 cat("Installing dependencies for ngme2", description[1L, "Version"], "\n")
 print(packages)
-# In particular, Clang dependencies must be built with the selected Makevars,
-# not taken from the R-hub GCC binary repository inherited by the base image.
+# Build dependencies from CRAN source using Fedora's default GCC toolchain,
+# not the R-hub binary repository. Docker switches to Clang only afterwards.
 pak::pkg_install(packages, dependencies = NA)
 missing <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]
 if (length(missing)) stop("Missing dependencies: ", paste(missing, collapse = ", "))

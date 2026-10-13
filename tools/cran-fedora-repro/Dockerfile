@@ -6,15 +6,19 @@ ARG NGME_COMPILER=gcc
 
 COPY Makevars.clang /opt/ngme2/Makevars.clang
 RUN if [ "$NGME_COMPILER" = clang ]; then \
-      dnf install -y clang libcxx-devel libcxxabi-devel libomp-devel && \
-      cp /opt/ngme2/Makevars.clang /root/.R/Makevars; \
+      dnf install -y clang libcxx-devel libcxxabi-devel libomp-devel; \
     elif [ "$NGME_COMPILER" != gcc ]; then \
       exit 2; \
     fi
 
 COPY ngme2-source.tar.gz /tmp/ngme2-source.tar.gz
 COPY install-deps.R /opt/ngme2/install-deps.R
+# Fedora's GDAL exposes a libstdc++ C++ interface. Build dependencies such as
+# sf with the default GCC toolchain, then switch only ngme2 to Clang/libc++.
 RUN Rscript /opt/ngme2/install-deps.R /tmp/ngme2-source.tar.gz
+RUN if [ "$NGME_COMPILER" = clang ]; then \
+      cp /opt/ngme2/Makevars.clang /root/.R/Makevars; \
+    fi
 RUN mkdir -p /opt/ngme2-source && \
     tar -xzf /tmp/ngme2-source.tar.gz -C /opt/ngme2-source
 

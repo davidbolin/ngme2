@@ -9,5 +9,5 @@ Suggests: knitr, rmarkdown, INLA, RcppEigen, sf, inlabru, dplyr, plyr,
         viridis, rSPDE, tidyr, fields, lme4, plotly, usethis, devtools,
         MetricGraph (>= 1.1.2), zoo, mvtnorm, kableExtra, reshape2
 License: GPL (>= 3)
-MD5sum: c2ccf0470fc6513319b59da0cea2a0d7
+MD5sum: 6e351721f011749bfeecb60452c0f156
 NeedsCompilation: yes

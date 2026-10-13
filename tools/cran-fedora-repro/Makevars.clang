@@ -17,6 +17,8 @@ CXX17 = clang++ -stdlib=libc++
 CXX20 = clang++ -stdlib=libc++
 CXX23 = clang++ -stdlib=libc++
 CXXFLAGS = -O3 -Wall -pedantic -frtti -Wp,-D_FORTIFY_SOURCE=3
+# R maps CXXFLAGS to CXX17FLAGS, etc., for packages selecting a standard.
+# Referencing CXXFLAGS here would then introduce a recursive make variable.
 CXX11FLAGS = -O3 -Wall -pedantic -frtti -Wp,-D_FORTIFY_SOURCE=3
 CXX14FLAGS = -O3 -Wall -pedantic -frtti -Wp,-D_FORTIFY_SOURCE=3
 CXX17FLAGS = -O3 -Wall -pedantic -frtti -Wp,-D_FORTIFY_SOURCE=3

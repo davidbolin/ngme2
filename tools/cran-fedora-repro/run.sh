@@ -40,13 +40,15 @@ docker build --platform linux/amd64 --progress plain \
   --build-arg "NGME_COMPILER=$compiler" --tag "$image" \
   "$output_dir" 2>&1 | tee "$output_dir/docker-build.log"
 
-docker run --rm --platform linux/amd64 "$image" \
+docker run --rm --init --platform linux/amd64 "$image" \
   sh -c 'cat /etc/os-release; R --version; R CMD config CC; R CMD config CXX; R CMD config CXXFLAGS; Rscript -e "sessionInfo()"; rpm -q gcc clang libcxx libomp; true' \
   > "$output_dir/environment.txt" 2>&1
 shasum -a 256 "$output_dir/$tarball_name" > "$output_dir/source-sha256.txt"
 
 if [[ "$mode" == check ]]; then
-  docker run --rm --platform linux/amd64 --cpus 2 \
+  # GNU timeout must not be PID 1: in this Fedora image it exits 125 before
+  # starting the child command. Docker's init also forwards termination signals.
+  docker run --rm --init --platform linux/amd64 --cpus 2 \
     --env "_R_CHECK_FORCE_SUGGESTS_=false" \
     --mount "type=bind,source=$output_dir,target=/check" "$image" \
     timeout --signal=TERM --kill-after=30s "${NGME_CHECK_TIMEOUT_SECS:-3600}s" \
@@ -54,7 +56,7 @@ if [[ "$mode" == check ]]; then
     2>&1 | tee "$output_dir/check-console.log"
   printf 'Full test output: %s/ngme2.Rcheck/tests/testthat.Rout\n' "$output_dir"
 else
-  docker run --rm --platform linux/amd64 --cpus 2 \
+  docker run --rm --init --platform linux/amd64 --cpus 2 \
     --env "NGME_TEST_TIMEOUT_SECS=${NGME_TEST_TIMEOUT_SECS:-600}" \
     --mount "type=bind,source=$output_dir,target=/check" "$image" \
     bash -c 'R CMD INSTALL /check/ngme2-source.tar.gz && /usr/local/bin/profile-ngme2-tests' \

@@ -46,6 +46,8 @@ file. Override `NGME_TEST_TIMEOUT_SECS` or `NGME_CHECK_TIMEOUT_SECS` as needed.
 
 Running x86_64 containers on Apple Silicon uses emulation, so local elapsed
 times cannot be compared directly with CRAN's timings.
+The pinned image's Rscript also exited with status 132 under the tested Apple
+Silicon emulation setup. Use the native x86_64 workflow if this happens locally.
 
 Select `toolchain-probe` in the manual workflow inputs to check two regressions
 without compiling ngme2: GCC-built Rcpp with Clang/libc++ must fail the exception
@@ -55,3 +57,26 @@ compile under `-Werror=unused-result` and preserve the generator state. libc++
 22 does not annotate this operator as nodiscard; the original CRAN warning
 depends on its library version. The deliberately inconsistent ABI case does
 not indicate a failure in ngme2.
+
+## Validation for ngme2 1.0.1
+
+On 2026-10-13, the same source tarball passed both native x86_64 Fedora 44
+checks with R-devel (2026-10-10 r90659) and the two-CPU limit:
+
+| Compiler | R CMD check result | Test elapsed time | Logs |
+| --- | --- | ---: | --- |
+| GCC 16.2.1 | 0 errors, 0 warnings, 1 NOTE | 92 seconds | [GCC job](https://github.com/davidbolin/ngme2/actions/runs/38379082554/job/115234811803) |
+| Clang 22.1.8 with libc++ | 0 errors, 0 warnings, 1 NOTE | 61 seconds | [Clang job](https://github.com/davidbolin/ngme2/actions/runs/38386109659/job/115258280541) |
+
+Source SHA-256:
+`f45a9dbb561d4ae41b8a01c2244b7dd085e074c38b70cbb12db9320e3ae14242`.
+The incoming NOTE concerns resubmission after archival and the optional INLA
+dependency. These counts are R CMD check results, not a claim that every
+compiler diagnostic has been eliminated: legacy Eigen/SuiteSparse and unused
+variable diagnostics remain in the installation logs. The original CRAN
+90-minute timeout has not been reproduced on its exact hosts.
+
+The [isolated toolchain probes](https://github.com/davidbolin/ngme2/actions/runs/38386107195)
+passed: the inconsistent Rcpp ABI crashed with status 139, the consistent ABI
+converted both exception types correctly, and explicit RNG discard compiled
+under strict warnings and preserved generator state.
